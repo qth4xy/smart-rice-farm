@@ -32,6 +32,7 @@ void App::begin() {
   snprintf(deviceId_, sizeof deviceId_, "srf-%02x%02x%02x", mac[3], mac[4], mac[5]);
 
   Wire.begin(PIN_I2C_SDA, PIN_I2C_SCL);
+  Wire.setTimeOut(20);  // a disturbed I2C bus must not stall the loop
   if (!display_.begin()) Serial.println("[WARN] OLED not found at 0x3C/0x3D, continuing without it");
 
   // Defaults from config.h, then whatever NVS has.

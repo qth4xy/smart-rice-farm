@@ -57,7 +57,7 @@ static void pinScan(int seconds) {
   Serial.printf("pinscan: touch GND to a pin now (%d s)...\n", seconds);
   const uint32_t end = millis() + seconds * 1000UL;
   while (static_cast<int32_t>(end - millis()) > 0) {
-    esp_task_wdt_reset();
+    g_app.loop();  // keep control, display and network running during the scan
     for (size_t i = 0; i < sizeof pins / sizeof pins[0]; i++) {
       const bool l = digitalRead(pins[i]) == LOW;
       if (l != low[i]) {

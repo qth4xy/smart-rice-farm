@@ -205,8 +205,14 @@ void Display::update(uint32_t nowMs, const Snapshot& s) {
   // A float switch moved: jump to the float page and hold it for 10 s.
   // Re-initialise the controller every 30 s: a glitch on the I2C wires (touching the breadboard)
   // can leave the SSD1306 frozen or garbled; this brings it back without a reboot.
-  if (nowMs - lastInit_ >= 30000) {
+  // Also 0.5 s after every pump start/stop: motor and relay switching can upset the bus.
+  if (s.pump != lastPump_) {
+    lastPump_ = s.pump;
+    reinitAt_ = nowMs + 500;
+  }
+  if (nowMs - lastInit_ >= 30000 || (reinitAt_ && static_cast<int32_t>(nowMs - reinitAt_) >= 0)) {
     lastInit_ = nowMs;
+    reinitAt_ = 0;
     g_oled.initDisplay();
     g_oled.setPowerSave(0);
   }
@@ -231,5 +237,11 @@ void Display::update(uint32_t nowMs, const Snapshot& s) {
       case 2: pageNetwork(s); break;
       default: pageAnalytics(s); break;
     }
+  // Heartbeat: a dot in the top-right corner that blinks every second while the loop runs.
+  if ((nowMs / 1000) % 2) {
+    g_oled.setDrawColor(2);
+    g_oled.drawBox(124, 0, 4, 4);
+    g_oled.setDrawColor(1);
+  }
   g_oled.sendBuffer();
 }

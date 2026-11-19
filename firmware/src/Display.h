@@ -28,6 +28,8 @@ class Display {
   uint32_t lastDraw_ = 0;
   uint8_t lastRaw_ = 0xFF;
   uint32_t lastInit_ = 0;
+  uint32_t reinitAt_ = 0;
+  bool lastPump_ = false;
 };
 
 // "45s", "3m05s", "2h46m", "3d04h"
