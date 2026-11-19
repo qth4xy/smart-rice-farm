@@ -140,6 +140,25 @@
       ]
     },
     {
+      "name": "fill command: pumps from the middle band until FLOAT_HIGH is WET; refused when not allowed",
+      "config": { "debounceS": 0, "pumpMaxRunS": 300 },
+      "steps": [
+        { "t": 0, "low": "WET", "high": "DRY", "expect": { "pump": false, "zone": "BETWEEN" } },
+        { "t": 10, "cmd": { "cmd": "fill" }, "expect": { "cmdOk": true, "pump": true, "filling": true, "manual": false, "events": ["pump_on"] } },
+        { "t": 60, "expect": { "pump": true, "zone": "BETWEEN" } },
+        { "t": 70, "high": "WET", "expect": { "pump": false, "filling": false, "zone": "ABOVE", "events": ["pump_off"] } },
+        { "t": 80, "cmd": { "cmd": "fill" }, "expect": { "cmdOk": false, "pump": false } },
+        { "t": 85, "high": "DRY", "expect": { "pump": false, "zone": "BETWEEN" } },
+        { "t": 90, "cmd": { "cmd": "fill" }, "expect": { "cmdOk": true, "pump": true } },
+        { "t": 389, "expect": { "pump": true } },
+        { "t": 390, "expect": { "pump": false, "fault": "PUMP_TIMEOUT", "events": ["pump_off", "fault"] } },
+        { "t": 400, "cmd": { "cmd": "fill" }, "expect": { "cmdOk": false, "pump": false } },
+        { "t": 410, "cmd": { "cmd": "clearFault" }, "expect": { "fault": null, "pump": false } },
+        { "t": 420, "cmd": { "cmd": "setMode", "mode": "OFF" }, "expect": { "mode": "OFF" } },
+        { "t": 430, "cmd": { "cmd": "fill" }, "expect": { "cmdOk": false, "pump": false } }
+      ]
+    },
+    {
       "name": "soil backup: FLOAT_LOW_SUSPECT warning only (default)",
       "config": { "debounceS": 0, "soilDryAlertPct": 30, "soilBackupDelayS": 600 },
       "steps": [

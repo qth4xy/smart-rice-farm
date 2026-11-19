@@ -16,6 +16,7 @@ static void printHelp() {
       "Commands:\n"
       "  help | status | net | scan | test (toggle raw test page)\n"
       "  mode awd|flood|off        pump on <seconds> | pump off\n"
+      "  fill                      pump now until FLOAT_HIGH is WET (+5 cm)\n"
       "  clear                     clear a latched fault\n"
       "  mute <minutes> | unmute   cal dry | cal wet (soil calibration)\n"
       "  floats dry | floats wet   learn float polarity (both floats in that state now)\n"
@@ -126,6 +127,8 @@ static void handleLine(String line) {
   } else if (a[0] == "pump" && n == 2 && a[1] == "off") {
     cmd["cmd"] = "pump";
     cmd["on"] = false;
+  } else if (a[0] == "fill") {
+    cmd["cmd"] = "fill";
   } else if (a[0] == "clear") {
     cmd["cmd"] = "clearFault";
   } else if (a[0] == "mute") {

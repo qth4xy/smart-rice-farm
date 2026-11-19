@@ -486,6 +486,9 @@ void App::runCommand(JsonObjectConst cmd, JsonDocument& ack) {
     } else {
       ctl_.manualPump(false, 0, now);
     }
+  } else if (!strcmp(name, "fill")) {
+    if (!onlyKeys(cmd, {"cmd"}, bad)) err = badField(bad);
+    else if (!ctl_.startFill()) err = "rejected: fault active, mode OFF, or FLOAT_HIGH not DRY";
   } else if (!strcmp(name, "clearFault")) {
     if (!onlyKeys(cmd, {"cmd"}, bad)) err = badField(bad);
     else handleEvents(ctl_.clearFault(), "command");

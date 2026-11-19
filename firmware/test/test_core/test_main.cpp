@@ -123,6 +123,8 @@ static void runCase(JsonObjectConst cs) {
         if (cmdOk) ev |= c.setMode(m);
       } else if (!strcmp(k, "pump")) {
         cmdOk = c.manualPump(cmd["on"] | false, cmd["seconds"] | 0u, ms);
+      } else if (!strcmp(k, "fill")) {
+        cmdOk = c.startFill();
       } else if (!strcmp(k, "clearFault")) {
         ev |= c.clearFault();
       } else if (!strcmp(k, "setConfig")) {

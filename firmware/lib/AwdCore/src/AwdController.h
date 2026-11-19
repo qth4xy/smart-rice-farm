@@ -53,6 +53,10 @@ class AwdController {
   // or when seconds == 0. on=false: cancel a manual run and stop any auto fill.
   bool manualPump(bool on, uint32_t seconds, uint64_t nowMs);
   uint32_t clearFault();
+  // Fill now: run the pump until FLOAT_HIGH reads WET (the latch keeps it on through the middle
+  // band). It is an automatic run, so PUMP_TIMEOUT still applies. Rejected during a fault, in OFF
+  // mode, or when FLOAT_HIGH is not DRY. Cancels a manual run.
+  bool startFill();
   // Auto run time carried over from before a reset (the pump was running and the chip restarted).
   // It counts toward pumpMaxRunS, so repeated resets cannot keep a dry pump running forever.
   void setCarryRunMs(uint32_t ms) { carryMs_ = ms; }

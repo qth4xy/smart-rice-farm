@@ -69,6 +69,8 @@ describe('shared AWD test vectors', () => {
             if (isMode(st.cmd.mode)) ev.push(...c.setMode(st.cmd.mode));
           } else if (k === 'pump') {
             cmdOk = c.manualPump(st.cmd.on === true, Number(st.cmd.seconds ?? 0), ms);
+          } else if (k === 'fill') {
+            cmdOk = c.startFill();
           } else if (k === 'clearFault') {
             ev.push(...c.clearFault());
           } else if (k === 'setConfig') {

@@ -114,6 +114,12 @@ export class Simulation {
     return ok;
   }
 
+  fill(): boolean {
+    const ok = this.ctl.startFill();
+    this.addLog(ok ? 'info' : 'fault', ok ? 'Fill to +5 cm started' : 'Fill refused: fault, mode OFF or already at +5 cm');
+    return ok;
+  }
+
   clearFault(): void {
     if (this.ctl.clearFault().length) this.addLog('info', 'Fault cleared by operator');
   }

@@ -156,6 +156,15 @@ export class AwdController {
     this.carryMs = ms;
   }
 
+  /** Fill now until FLOAT_HIGH reads WET (PUMP_TIMEOUT still applies). Rejected during a fault,
+   * in OFF mode, or when FLOAT_HIGH is not DRY. Cancels a manual run. */
+  startFill(): boolean {
+    if (this._fault !== null || this._mode === 'OFF' || this.high.state !== 'DRY') return false;
+    this._manualActive = false;
+    this._filling = true;
+    return true;
+  }
+
   clearFault(): EventName[] {
     if (this._fault === null) return [];
     this._fault = null;

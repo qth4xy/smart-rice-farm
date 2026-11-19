@@ -86,6 +86,11 @@ the pump stops). A manual run is refused while a fault is latched. `on:false` ca
 and stops an automatic fill; in AWD with both floats DRY the pump restarts on the next tick, so use
 mode `OFF` to stop for good.
 
+**Fill now** (`{"cmd":"fill"}`, console `fill`): starts a fill at once, even in the middle band
+where AWD would wait for FLOAT_LOW to go DRY. The pump runs until FLOAT_HIGH reads WET, exactly
+like an automatic fill, so `PUMP_TIMEOUT` still applies. Refused during a fault, in `OFF` mode, or
+when FLOAT_HIGH is not DRY.
+
 ## Safety
 
 - The pump is OFF at boot, while floats are unknown, during any fault, and on a crash (the task
@@ -154,7 +159,7 @@ boot has no measured drying time, so it is not stored.
   `{t, low?, high?, soil?, cmd?, expect?}`.
   - `t` is in seconds. Exactly one controller tick, then one analytics update, runs at each step.
   - `low`, `high` and `soil` stay as set until a later step changes them. `soil` starts invalid.
-  - `cmd` uses the MQTT command JSON (`setMode`, `pump`, `clearFault`, `setConfig`) and is applied
+  - `cmd` uses the MQTT command JSON (`setMode`, `pump`, `fill`, `clearFault`, `setConfig`) and is applied
     before the tick.
   - `expect` keys are optional: `pump`, `filling`, `manual`, `cmdOk`, `mode`, `zone`,
     `fault` (null = none), `pumpRunS`, `warnings`, `events` (exact set from the command and the

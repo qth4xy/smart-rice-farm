@@ -57,6 +57,13 @@ uint32_t AwdController::clearFault() {
   return Ev::FAULT_CLEARED;
 }
 
+bool AwdController::startFill() {
+  if (fault_ != Fault::NONE || mode_ == Mode::OFF || high_.state() != FloatState::DRY) return false;
+  manualActive_ = false;
+  filling_ = true;
+  return true;
+}
+
 uint32_t AwdController::raise(Fault f) {
   if (fault_ != Fault::NONE) return 0;  // first fault wins, latched
   fault_ = f;
