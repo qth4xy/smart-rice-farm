@@ -62,6 +62,8 @@ static void help() {
       "  pump on|off  switch the pump output (pump DISCONNECTED first!)\n"
       "  beep [n]     n short beeps\n"
       "  buzz on|off  hold the buzzer output\n"
+      "  buzz high|low  raw GPIO15 level (polarity test)\n"
+      "  tone [Hz]    1.5 s square wave (passive buzzer test)\n"
       "  live on|off  print readings every second\n");
 }
 
@@ -74,6 +76,13 @@ static void handleLine(String s) {
   else if (s.startsWith("beep")) beep(s.length() > 5 ? s.substring(5).toInt() : 1);
   else if (s == "buzz on") buzzerWrite(true);
   else if (s == "buzz off") buzzerWrite(false);
+  else if (s == "buzz high") { noTone(PIN_BUZZER); digitalWrite(PIN_BUZZER, HIGH); Serial.println("GPIO15 HIGH"); }
+  else if (s == "buzz low") { noTone(PIN_BUZZER); digitalWrite(PIN_BUZZER, LOW); Serial.println("GPIO15 LOW"); }
+  else if (s.startsWith("tone")) {  // for a passive buzzer: tone [Hz]
+    int hz = s.length() > 5 ? s.substring(5).toInt() : 2700;
+    tone(PIN_BUZZER, hz, 1500);
+    Serial.printf("tone %d Hz 1.5 s\n", hz);
+  }
   else if (s == "live on") live = true;
   else if (s == "live off") live = false;
   else Serial.printf("unknown: '%s' (type help)\n", s.c_str());

@@ -18,8 +18,8 @@ constexpr int PIN_BOOT = 0;        // onboard BOOT button, input only after boot
 // ---------------- Polarity (check on the bench) ----------------
 // Pump module: true = IN HIGH runs the pump.
 constexpr bool PUMP_ACTIVE_HIGH = true;
-// Buzzer module: true = I/O HIGH beeps. Many 3-pin modules are active-LOW.
-constexpr bool BUZZER_ACTIVE_HIGH = false;
+// Buzzer module: true = I/O HIGH beeps. Bench-verified 2026-11-19: active-HIGH.
+constexpr bool BUZZER_ACTIVE_HIGH = true;
 // Float switch closed (pin reads LOW with the pull-up) means WET?
 constexpr bool FLOAT_LOW_CLOSED_IS_WET = true;
 constexpr bool FLOAT_HIGH_CLOSED_IS_WET = true;
