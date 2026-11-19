@@ -45,7 +45,8 @@ fields; never rename or remove one.
 | `warnings` | string[] | `FLOAT_LOW_SUSPECT`, `SLOW_FILL`, `FAST_DRAIN` |
 | `soilPct` | int \| null | null = reading invalid |
 | `soilRaw` | int | raw ADC (0–4095) |
-| `airTempC`, `airRh` | number \| null | null = DHT11 read failed |
+| `airTempC`, `airRh` | number \| null | null = no good DHT11 reading in the last 30 s |
+| `dhtFails` | int | DHT11 read failures since boot (single misses are normal) |
 | `nextIrrigationEta` | int \| null | **an estimate**: last pump-off + average drying time |
 | `avgDryingS`, `avgFillS` | int | over the last 10 recorded cycles, 0 if none |
 | `cycles` | int | total recorded cycles |

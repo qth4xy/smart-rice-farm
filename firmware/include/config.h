@@ -2,7 +2,7 @@
 #pragma once
 #include <stdint.h>
 
-#define FW_VERSION "0.4.0"
+#define FW_VERSION "0.4.1"
 
 // ---------------- Pins ----------------
 constexpr int PIN_I2C_SDA = 8;
@@ -50,6 +50,7 @@ constexpr uint32_t FLOAT_POLL_MS = 50;
 constexpr uint32_t SOIL_POLL_MS = 2000;
 constexpr int SOIL_SAMPLES = 16;
 constexpr uint32_t DHT_POLL_MS = 5000;  // never faster than 2000
+constexpr uint32_t DHT_STALE_MS = 30000; // keep the last good DHT value this long after a miss
 constexpr uint32_t OLED_REFRESH_MS = 250;
 constexpr uint32_t OLED_PAGE_MS = 4000;
 constexpr uint32_t TELEMETRY_MS = 10000;

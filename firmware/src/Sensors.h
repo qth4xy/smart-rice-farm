@@ -35,5 +35,6 @@ class Sensors {
   int rawWet_ = 1300;
   uint32_t lastSoil_ = 0;
   uint32_t lastDht_ = 0;
+  uint32_t lastDhtOk_ = 0;
   bool first_ = true;
 };

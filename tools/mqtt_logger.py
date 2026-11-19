@@ -27,7 +27,7 @@ import paho.mqtt.client as mqtt
 STATE_FIELDS = [
     "ts", "mode", "pump", "pumpRunS", "manual", "filling", "floatLow", "floatHigh", "zone",
     "fault", "warnings", "soilPct", "soilRaw", "airTempC", "airRh", "nextIrrigationEta",
-    "avgDryingS", "avgFillS", "cycles", "stage", "muted", "rssi", "uptimeS", "fw",
+    "avgDryingS", "avgFillS", "cycles", "stage", "muted", "rssi", "dhtFails", "uptimeS", "fw",
 ]
 
 
@@ -46,6 +46,7 @@ class CsvSink:
 
 
 def main() -> int:
+    sys.stdout.reconfigure(line_buffering=True)
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--host", default=os.environ.get("SRF_MQTT_HOST", "broker.hivemq.com"))
     ap.add_argument("--root", default=os.environ.get("SRF_MQTT_ROOT", "srf"),

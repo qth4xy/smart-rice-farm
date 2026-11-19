@@ -36,6 +36,7 @@ struct Snapshot {
   int soilCalDry = 0, soilCalWet = 0;
   float airTempC = 0, airRh = 0;
   bool dhtOk = false;
+  uint32_t dhtFails = 0;
   uint32_t cycles = 0, totalCycles = 0, avgDryingS = 0, avgFillS = 0;
   int64_t nextIrrigationInS = -1;  // -1 = no estimate
   srf::CropStage stage = srf::CropStage::NONE;

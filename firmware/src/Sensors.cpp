@@ -59,12 +59,17 @@ void Sensors::poll(uint32_t nowMs) {
     const float t = g_dht.readTemperature();
     const float h = g_dht.readHumidity();
     if (isnan(t) || isnan(h)) {
-      r_.dhtOk = false;
+      // The DHT11 misses an occasional read. Keep the last good value for up to DHT_STALE_MS,
+      // then report the sensor as failed. Failures are always counted.
       r_.dhtFailCount++;
-      r_.airTempC = NAN;
-      r_.airRh = NAN;
+      if (!r_.dhtOk || nowMs - lastDhtOk_ > DHT_STALE_MS) {
+        r_.dhtOk = false;
+        r_.airTempC = NAN;
+        r_.airRh = NAN;
+      }
     } else {
       r_.dhtOk = true;
+      lastDhtOk_ = nowMs;
       r_.airTempC = t;
       r_.airRh = h;
     }

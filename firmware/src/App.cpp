@@ -132,7 +132,7 @@ void App::handleEvents(uint32_t ev, const char* reason) {
   if (ev & Ev::PUMP_OFF) {
     buzzer_.beeps(2);
     JsonDocument d;
-    d["runS"] = static_cast<uint32_t>((ctl_.pumpOffSinceMs() - ctl_.pumpOnSinceMs()) / 1000);
+    d["runS"] = static_cast<uint32_t>((ctl_.pumpOffSinceMs() - ctl_.pumpOnSinceMs() + 500) / 1000);
     if (ctl_.fault() != Fault::NONE) d["reason"] = "fault";
     emit("pump_off", d.as<JsonObjectConst>());
   }
@@ -272,6 +272,7 @@ void App::publishState(const Snapshot& s) {
   d["muted"] = s.muted;
   if (s.net.wifiConnected) d["rssi"] = s.net.rssi;
   else d["rssi"] = nullptr;
+  d["dhtFails"] = s.dhtFails;
   d["uptimeS"] = s.uptimeS;
   d["fw"] = FW_VERSION;
   char buf[1024];
@@ -374,6 +375,7 @@ Snapshot App::snapshot() {
   s.soilCalDry = sensors_.soilRawDry();
   s.soilCalWet = sensors_.soilRawWet();
   s.dhtOk = r.dhtOk;
+  s.dhtFails = r.dhtFailCount;
   s.airTempC = r.airTempC;
   s.airRh = r.airRh;
   s.cycles = analytics_.count();
