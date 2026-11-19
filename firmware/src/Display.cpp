@@ -200,7 +200,18 @@ void Display::pageTest(const Snapshot& s) {
 }
 
 void Display::update(uint32_t nowMs, const Snapshot& s) {
-  if (!ok_ || nowMs - lastDraw_ < OLED_REFRESH_MS) return;
+  // OLED missing (loose wire)? Probe again every 5 s, so it comes back without a reboot.
+  if (!ok_) {
+    if (nowMs - lastProbe_ >= 5000) {
+      lastProbe_ = nowMs;
+      if (begin()) {
+        Serial.println("[OLED] found again");
+        lastInit_ = nowMs;
+      }
+    }
+    return;
+  }
+  if (nowMs - lastDraw_ < OLED_REFRESH_MS) return;
   lastDraw_ = nowMs;
   // A float switch moved: jump to the float page and hold it for 10 s.
   // Re-initialise the controller every 30 s: a glitch on the I2C wires (touching the breadboard)

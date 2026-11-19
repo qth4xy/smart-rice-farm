@@ -1,6 +1,7 @@
 // Smart Rice Farm firmware entry point. Thin on purpose: App does the work.
 #include <Arduino.h>
 #include <ArduinoJson.h>
+#include <Wire.h>
 #include <esp_task_wdt.h>
 
 #include "Actuators.h"
@@ -13,7 +14,7 @@ static App g_app;
 static void printHelp() {
   Serial.println(
       "Commands:\n"
-      "  help | status | net | test (toggle raw test page)\n"
+      "  help | status | net | scan | test (toggle raw test page)\n"
       "  mode awd|flood|off        pump on <seconds> | pump off\n"
       "  clear                     clear a latched fault\n"
       "  mute <minutes> | unmute   cal dry | cal wet (soil calibration)\n"
@@ -90,6 +91,19 @@ static void handleLine(String line) {
   if (a[0] == "help") return printHelp();
   if (a[0] == "status") return printStatus();
   if (a[0] == "net") return g_app.printNet();
+  if (a[0] == "scan") {  // I2C scan: OLED should answer at 0x3C
+    Serial.println("I2C scan (SDA=GPIO8, SCL=GPIO9):");
+    int found = 0;
+    for (uint8_t addr = 1; addr < 127; addr++) {
+      Wire.beginTransmission(addr);
+      if (Wire.endTransmission() == 0) {
+        Serial.printf("  device at 0x%02X%s\n", addr, addr == 0x3C || addr == 0x3D ? " (OLED)" : "");
+        found++;
+      }
+    }
+    if (!found) Serial.println("  nothing found: check OLED GND, VDD(3V3), SCK(GPIO9), SDA(GPIO8)");
+    return;
+  }
   if (a[0] == "pinscan") return pinScan(n >= 2 ? constrain(a[1].toInt(), 5, 120) : 30);
   if (a[0] == "mqtt" && n >= 2 && a[1] == "root") return g_app.newRoot(n >= 3 && a[2] != "new" ? a[2].c_str() : nullptr);
   if (a[0] == "json") {
