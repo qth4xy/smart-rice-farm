@@ -1,0 +1,211 @@
+{
+  "version": 1,
+  "about": "Shared test vectors for AwdController + Analytics + CropSchedule. Used by firmware (pio test -e native) and web (vitest). Format: see docs/control-logic.md#test-vectors.",
+  "cases": [
+    {
+      "name": "boot: pump stays off until both floats are debounced",
+      "config": { "debounceS": 3 },
+      "steps": [
+        { "t": 0, "low": "DRY", "high": "DRY", "expect": { "pump": false, "zone": "UNKNOWN", "events": [] } },
+        { "t": 2, "expect": { "pump": false, "zone": "UNKNOWN" } },
+        { "t": 3, "expect": { "pump": true, "zone": "BELOW", "events": ["pump_on"] } }
+      ]
+    },
+    {
+      "name": "AWD: full table walk with the fill/dry latch in the middle band",
+      "config": { "debounceS": 0 },
+      "steps": [
+        { "t": 0, "low": "DRY", "high": "DRY", "expect": { "pump": true, "filling": true, "zone": "BELOW", "events": ["pump_on"] } },
+        { "t": 60, "low": "WET", "high": "DRY", "expect": { "pump": true, "filling": true, "zone": "BETWEEN", "events": [] } },
+        { "t": 120, "low": "WET", "high": "WET", "expect": { "pump": false, "filling": false, "zone": "ABOVE", "events": ["pump_off"] } },
+        { "t": 200, "low": "WET", "high": "DRY", "expect": { "pump": false, "filling": false, "zone": "BETWEEN", "events": [] } },
+        { "t": 5000, "low": "DRY", "high": "DRY", "expect": { "pump": true, "zone": "BELOW", "events": ["pump_on"] } }
+      ]
+    },
+    {
+      "name": "AWD: middle band at boot with no history keeps the pump off",
+      "config": { "debounceS": 0 },
+      "steps": [
+        { "t": 0, "low": "WET", "high": "DRY", "expect": { "pump": false, "zone": "BETWEEN", "fault": null } }
+      ]
+    },
+    {
+      "name": "fault: FLOAT_CONFLICT latches until clearFault and re-raises if still present",
+      "config": { "debounceS": 0 },
+      "steps": [
+        { "t": 0, "low": "WET", "high": "DRY", "expect": { "pump": false } },
+        { "t": 10, "low": "DRY", "high": "WET", "expect": { "pump": false, "fault": "FLOAT_CONFLICT", "zone": "INVALID", "events": ["fault"] } },
+        { "t": 20, "low": "WET", "high": "DRY", "expect": { "pump": false, "fault": "FLOAT_CONFLICT", "zone": "BETWEEN", "events": [] } },
+        { "t": 30, "low": "DRY", "high": "DRY", "expect": { "pump": false, "fault": "FLOAT_CONFLICT" } },
+        { "t": 40, "cmd": { "cmd": "clearFault" }, "expect": { "pump": true, "fault": null, "events": ["fault_cleared", "pump_on"] } },
+        { "t": 50, "low": "DRY", "high": "WET", "expect": { "pump": false, "fault": "FLOAT_CONFLICT", "events": ["pump_off", "fault"] } },
+        { "t": 60, "cmd": { "cmd": "clearFault" }, "expect": { "pump": false, "fault": "FLOAT_CONFLICT", "events": ["fault_cleared", "fault"] } }
+      ]
+    },
+    {
+      "name": "debounce: ripples shorter than debounceS are ignored",
+      "config": { "debounceS": 3 },
+      "steps": [
+        { "t": 0, "low": "WET", "high": "WET" },
+        { "t": 3, "expect": { "pump": false, "zone": "ABOVE" } },
+        { "t": 10, "high": "DRY", "expect": { "zone": "ABOVE" } },
+        { "t": 11, "high": "WET", "expect": { "zone": "ABOVE" } },
+        { "t": 12, "high": "DRY", "expect": { "zone": "ABOVE" } },
+        { "t": 14, "expect": { "zone": "ABOVE" } },
+        { "t": 15, "expect": { "zone": "BETWEEN", "pump": false } },
+        { "t": 30, "low": "DRY", "expect": { "pump": false } },
+        { "t": 32, "low": "WET", "expect": { "pump": false, "zone": "BETWEEN" } },
+        { "t": 40, "expect": { "pump": false, "zone": "BETWEEN" } },
+        { "t": 50, "low": "DRY", "expect": { "pump": false } },
+        { "t": 53, "expect": { "pump": true, "zone": "BELOW", "events": ["pump_on"] } }
+      ]
+    },
+    {
+      "name": "safety: PUMP_TIMEOUT when FLOAT_HIGH never goes WET",
+      "config": { "debounceS": 0, "pumpMaxRunS": 300 },
+      "steps": [
+        { "t": 0, "low": "DRY", "high": "DRY", "expect": { "pump": true, "events": ["pump_on"] } },
+        { "t": 120, "low": "WET", "expect": { "pump": true, "pumpRunS": 120 } },
+        { "t": 299, "expect": { "pump": true } },
+        { "t": 300, "expect": { "pump": false, "fault": "PUMP_TIMEOUT", "events": ["pump_off", "fault"] } },
+        { "t": 400, "expect": { "pump": false, "fault": "PUMP_TIMEOUT" } },
+        { "t": 500, "cmd": { "cmd": "clearFault" }, "expect": { "pump": false, "fault": null, "events": ["fault_cleared"] } },
+        { "t": 600, "low": "DRY", "expect": { "pump": true, "events": ["pump_on"] } },
+        { "t": 900, "expect": { "pump": false, "fault": "PUMP_TIMEOUT", "events": ["pump_off", "fault"] } }
+      ]
+    },
+    {
+      "name": "FLOOD: FLOAT_HIGH only, with minimum off time",
+      "config": { "debounceS": 0, "pumpMinOffS": 60 },
+      "mode": "FLOOD",
+      "steps": [
+        { "t": 0, "low": "WET", "high": "DRY", "expect": { "pump": true, "mode": "FLOOD", "events": ["pump_on"] } },
+        { "t": 100, "high": "WET", "expect": { "pump": false, "events": ["pump_off"] } },
+        { "t": 110, "high": "DRY", "expect": { "pump": false } },
+        { "t": 159, "expect": { "pump": false } },
+        { "t": 160, "expect": { "pump": true, "events": ["pump_on"] } },
+        { "t": 200, "low": "DRY", "expect": { "pump": true } },
+        { "t": 220, "low": "WET", "high": "WET", "expect": { "pump": false } }
+      ]
+    },
+    {
+      "name": "OFF mode never pumps; mode changes emit mode_changed",
+      "config": { "debounceS": 0 },
+      "mode": "OFF",
+      "steps": [
+        { "t": 0, "low": "DRY", "high": "DRY", "expect": { "pump": false, "mode": "OFF" } },
+        { "t": 10, "cmd": { "cmd": "setMode", "mode": "AWD" }, "expect": { "pump": true, "mode": "AWD", "events": ["mode_changed", "pump_on"] } },
+        { "t": 20, "cmd": { "cmd": "setMode", "mode": "OFF" }, "expect": { "pump": false, "filling": false, "events": ["mode_changed", "pump_off"] } },
+        { "t": 30, "cmd": { "cmd": "setMode", "mode": "OFF" }, "expect": { "pump": false, "events": [] } }
+      ]
+    },
+    {
+      "name": "mode change AWD -> FLOOD keeps an ongoing fill",
+      "config": { "debounceS": 0 },
+      "steps": [
+        { "t": 0, "low": "DRY", "high": "DRY", "expect": { "pump": true } },
+        { "t": 10, "low": "WET", "expect": { "pump": true } },
+        { "t": 20, "cmd": { "cmd": "setMode", "mode": "FLOOD" }, "expect": { "pump": true, "mode": "FLOOD", "events": ["mode_changed"] } },
+        { "t": 30, "high": "WET", "expect": { "pump": false, "events": ["pump_off"] } }
+      ]
+    },
+    {
+      "name": "manual pump: runs N seconds, capped at pumpMaxRunS, can be stopped, rejected during a fault",
+      "config": { "debounceS": 0, "pumpMaxRunS": 300 },
+      "mode": "OFF",
+      "steps": [
+        { "t": 0, "low": "WET", "high": "DRY", "expect": { "pump": false } },
+        { "t": 10, "cmd": { "cmd": "pump", "on": true, "seconds": 30 }, "expect": { "cmdOk": true, "pump": true, "manual": true, "events": ["pump_on"] } },
+        { "t": 39, "expect": { "pump": true } },
+        { "t": 40, "expect": { "pump": false, "manual": false, "events": ["pump_off"] } },
+        { "t": 100, "cmd": { "cmd": "pump", "on": true, "seconds": 1000 }, "expect": { "cmdOk": true, "pump": true } },
+        { "t": 399, "expect": { "pump": true } },
+        { "t": 400, "expect": { "pump": false, "fault": null, "events": ["pump_off"] } },
+        { "t": 500, "cmd": { "cmd": "pump", "on": true, "seconds": 60 }, "expect": { "pump": true } },
+        { "t": 510, "cmd": { "cmd": "pump", "on": false }, "expect": { "cmdOk": true, "pump": false, "events": ["pump_off"] } },
+        { "t": 600, "low": "DRY", "high": "WET", "expect": { "fault": "FLOAT_CONFLICT" } },
+        { "t": 610, "cmd": { "cmd": "pump", "on": true, "seconds": 10 }, "expect": { "cmdOk": false, "pump": false } }
+      ]
+    },
+    {
+      "name": "soil backup: FLOAT_LOW_SUSPECT warning only (default)",
+      "config": { "debounceS": 0, "soilDryAlertPct": 30, "soilBackupDelayS": 600 },
+      "steps": [
+        { "t": 0, "low": "WET", "high": "DRY", "soil": 50, "expect": { "warnings": [] } },
+        { "t": 100, "soil": 25, "expect": { "warnings": [] } },
+        { "t": 699, "expect": { "warnings": [] } },
+        { "t": 700, "expect": { "warnings": ["FLOAT_LOW_SUSPECT"], "pump": false, "events": ["warning"] } },
+        { "t": 750, "expect": { "warnings": ["FLOAT_LOW_SUSPECT"], "events": [] } },
+        { "t": 800, "soil": 40, "expect": { "warnings": [] } },
+        { "t": 900, "soil": -1, "expect": { "warnings": [] } }
+      ]
+    },
+    {
+      "name": "soil backup: may start the pump when soilBackupCanStartPump is true",
+      "config": { "debounceS": 0, "soilDryAlertPct": 30, "soilBackupDelayS": 600, "soilBackupCanStartPump": true },
+      "steps": [
+        { "t": 0, "low": "WET", "high": "DRY", "soil": 20, "expect": { "pump": false } },
+        { "t": 600, "expect": { "pump": true, "warnings": ["FLOAT_LOW_SUSPECT"], "events": ["warning", "pump_on"] } },
+        { "t": 700, "high": "WET", "expect": { "pump": false, "events": ["pump_off"] } }
+      ]
+    },
+    {
+      "name": "analytics: cycle times, averages, ETA, SLOW_FILL and FAST_DRAIN",
+      "config": { "debounceS": 0, "pumpMaxRunS": 1000 },
+      "steps": [
+        { "t": 0, "low": "DRY", "high": "DRY", "expect": { "pump": true, "cycles": 0, "nextIrrigationAtS": null } },
+        { "t": 100, "low": "WET" },
+        { "t": 200, "high": "WET", "expect": { "pump": false, "cycles": 0, "nextIrrigationAtS": null } },
+        { "t": 1200, "high": "DRY" },
+        { "t": 10200, "low": "DRY", "expect": { "pump": true, "events": ["pump_on"] } },
+        { "t": 10300, "low": "WET" },
+        { "t": 10380, "high": "WET", "expect": { "pump": false, "cycles": 1, "avgDryingS": 10000, "avgFillS": 180, "nextIrrigationAtS": 20380, "analyticsWarnings": [], "events": ["pump_off", "cycle_complete"] } },
+        { "t": 11000, "high": "DRY" },
+        { "t": 20380, "low": "DRY", "expect": { "nextIrrigationAtS": null } },
+        { "t": 20400, "low": "WET" },
+        { "t": 20560, "high": "WET", "expect": { "cycles": 2, "avgDryingS": 10000, "avgFillS": 180 } },
+        { "t": 21000, "high": "DRY" },
+        { "t": 30560, "low": "DRY" },
+        { "t": 30600, "low": "WET" },
+        { "t": 30740, "high": "WET", "expect": { "cycles": 3, "analyticsWarnings": [] } },
+        { "t": 31000, "high": "DRY" },
+        { "t": 40740, "low": "DRY" },
+        { "t": 40800, "low": "WET" },
+        { "t": 41140, "high": "WET", "expect": { "cycles": 4, "avgDryingS": 10000, "avgFillS": 235, "analyticsWarnings": ["SLOW_FILL"], "events": ["pump_off", "cycle_complete", "warning"] } },
+        { "t": 41500, "high": "DRY" },
+        { "t": 44140, "low": "DRY" },
+        { "t": 44200, "low": "WET" },
+        { "t": 44320, "high": "WET", "expect": { "cycles": 5, "avgDryingS": 8600, "avgFillS": 224, "analyticsWarnings": ["FAST_DRAIN"], "nextIrrigationAtS": 52920, "events": ["pump_off", "cycle_complete", "warning"] } }
+      ]
+    },
+    {
+      "name": "analytics: a manual run or a mode change discards the cycle in progress",
+      "config": { "debounceS": 0 },
+      "steps": [
+        { "t": 0, "low": "DRY", "high": "DRY" },
+        { "t": 50, "low": "WET" },
+        { "t": 100, "high": "WET", "expect": { "pump": false } },
+        { "t": 200, "high": "DRY" },
+        { "t": 1000, "cmd": { "cmd": "pump", "on": true, "seconds": 20 }, "expect": { "pump": true } },
+        { "t": 1020, "expect": { "pump": false } },
+        { "t": 5000, "low": "DRY", "expect": { "pump": true } },
+        { "t": 5050, "low": "WET" },
+        { "t": 5100, "high": "WET", "expect": { "pump": false, "cycles": 0 } }
+      ]
+    }
+  ],
+  "schedule": [
+    { "transplant": null, "flowering": null, "date": "2026-12-05", "stage": "NONE", "mode": null },
+    { "transplant": "2026-12-01", "flowering": "2027-02-15", "date": "2026-11-30", "stage": "PRE_TRANSPLANT", "mode": null },
+    { "transplant": "2026-12-01", "flowering": "2027-02-15", "date": "2026-12-01", "stage": "ESTABLISHMENT", "mode": "FLOOD" },
+    { "transplant": "2026-12-01", "flowering": "2027-02-15", "date": "2026-12-14", "stage": "ESTABLISHMENT", "mode": "FLOOD" },
+    { "transplant": "2026-12-01", "flowering": "2027-02-15", "date": "2026-12-15", "stage": "VEGETATIVE", "mode": "AWD" },
+    { "transplant": "2026-12-01", "flowering": "2027-02-15", "date": "2027-02-07", "stage": "VEGETATIVE", "mode": "AWD" },
+    { "transplant": "2026-12-01", "flowering": "2027-02-15", "date": "2027-02-08", "stage": "FLOWERING", "mode": "FLOOD" },
+    { "transplant": "2026-12-01", "flowering": "2027-02-15", "date": "2027-02-22", "stage": "FLOWERING", "mode": "FLOOD" },
+    { "transplant": "2026-12-01", "flowering": "2027-02-15", "date": "2027-02-23", "stage": "RIPENING", "mode": "AWD" },
+    { "transplant": "2026-12-01", "flowering": "2026-12-10", "date": "2026-12-02", "stage": "ESTABLISHMENT", "mode": "FLOOD" },
+    { "transplant": "2026-12-01", "flowering": "2026-12-10", "date": "2026-12-03", "stage": "FLOWERING", "mode": "FLOOD" },
+    { "transplant": "2026-12-01", "flowering": "2026-12-10", "date": "2026-12-18", "stage": "RIPENING", "mode": "AWD" }
+  ]
+}

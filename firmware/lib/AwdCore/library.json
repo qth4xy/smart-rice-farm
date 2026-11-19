@@ -1,0 +1,7 @@
+{
+  "name": "AwdCore",
+  "version": "1.0.0",
+  "description": "Pure C++ Safe AWD controller, analytics and crop schedule (no Arduino dependency).",
+  "frameworks": "*",
+  "platforms": "*"
+}
