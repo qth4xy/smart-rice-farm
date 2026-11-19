@@ -5,6 +5,8 @@ firmware/include/secrets.h
 # Node / web
 node_modules/
 dist/
+dist-single/
+web/screenshots/
 .vercel/
 .env
 .env.*

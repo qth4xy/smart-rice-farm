@@ -33,7 +33,9 @@ OLED SDA 8 / SCL 9 · Soil 1 (ADC1) · DHT11 4 · FLOAT_LOW 5 · FLOAT_HIGH 6 ·
 ## Commands
 - Firmware: `cd firmware && pio run`, `pio run -t upload --upload-port COM4`, `pio device monitor -b 115200`
 - Firmware tests: `cd firmware && pio test -e native`
-- Web: `cd web && npm run dev | npm test | npm run build | npm run build:single`
+- Web: `cd web && npm run dev | npm test | npm run build | npm run build:single` (-> dist-single/presentation.html)
+- Web screenshots (file://, offline, 3 sizes, fails on scroll/page errors/network): `cd web && npm run screenshots`
+- Node is at C:\Program Files\nodejs (prepend to PATH in PowerShell sessions).
 
 ## Layout
 docs/ firmware/ web/ shared/ tools/ .github/workflows/ — see docs/PROMPT.md §8.
