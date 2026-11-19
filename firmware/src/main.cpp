@@ -1,6 +1,7 @@
 // Smart Rice Farm firmware entry point. Thin on purpose: App does the work.
 #include <Arduino.h>
 #include <ArduinoJson.h>
+#include <esp_task_wdt.h>
 
 #include "Actuators.h"
 #include "App.h"
@@ -21,6 +22,7 @@ static void printHelp() {
       "  schedule <YYYY-MM-DD transplant> <YYYY-MM-DD flowering> | schedule clear\n"
       "  wifi reset                open the Wi-Fi setup portal\n"
       "  mqtt root new | mqtt root <name>   change the MQTT topic root (serial only)\n"
+      "  pinscan [s]               bench: report which GPIO a wire to GND is on\n"
       "  reboot | json {\"cmd\":...}  raw MQTT-style JSON command");
 }
 
@@ -42,6 +44,31 @@ static void printStatus() {
                 s.muted ? "yes" : "no");
 }
 
+// Bench helper: for `seconds`, report every free GPIO that gets pulled to GND.
+// Touch a wire from GND to a pin and this prints which GPIO it really is. The pump stays off.
+static void pinScan(int seconds) {
+  // Free, input-safe pins (no strapping 0/3/45/46, USB 19/20, flash/PSRAM 26-37, UART0 43/44,
+  // and none of our outputs or the I2C/ADC/DHT pins).
+  static const int pins[] = {2, 5, 6, 10, 11, 12, 13, 14, 16, 17, 18, 21, 38, 39, 40, 41, 42, 47, 48};
+  for (int p : pins) pinMode(p, INPUT_PULLUP);
+  delay(20);
+  bool low[sizeof pins / sizeof pins[0]] = {};
+  Serial.printf("pinscan: touch GND to a pin now (%d s)...\n", seconds);
+  const uint32_t end = millis() + seconds * 1000UL;
+  while (static_cast<int32_t>(end - millis()) > 0) {
+    esp_task_wdt_reset();
+    for (size_t i = 0; i < sizeof pins / sizeof pins[0]; i++) {
+      const bool l = digitalRead(pins[i]) == LOW;
+      if (l != low[i]) {
+        low[i] = l;
+        Serial.printf("  GPIO%d -> %s\n", pins[i], l ? "LOW (connected to GND)" : "released");
+      }
+    }
+    delay(20);
+  }
+  Serial.println("pinscan done");
+}
+
 // Turns a console line into the same JSON command the MQTT `cmd` topic uses.
 static void handleLine(String line) {
   line.trim();
@@ -61,6 +88,7 @@ static void handleLine(String line) {
   if (a[0] == "help") return printHelp();
   if (a[0] == "status") return printStatus();
   if (a[0] == "net") return g_app.printNet();
+  if (a[0] == "pinscan") return pinScan(n >= 2 ? constrain(a[1].toInt(), 5, 120) : 30);
   if (a[0] == "mqtt" && n >= 2 && a[1] == "root") return g_app.newRoot(n >= 3 && a[2] != "new" ? a[2].c_str() : nullptr);
   if (a[0] == "json") {
     if (deserializeJson(cmd, line.substring(5))) {

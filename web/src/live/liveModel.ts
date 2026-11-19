@@ -15,6 +15,8 @@ export interface DeviceState {
   filling?: boolean;
   floatLow: FloatState;
   floatHigh: FloatState;
+  floatLowPin?: 'OPEN' | 'CLOSED';
+  floatHighPin?: 'OPEN' | 'CLOSED';
   zone: Zone;
   fault: Fault | null;
   warnings: Warning[];
@@ -158,6 +160,8 @@ export class LiveModel {
       filling: !!s.filling,
       floatLow: s.floatLow,
       floatHigh: s.floatHigh,
+      floatLowPin: s.floatLowPin,
+      floatHighPin: s.floatHighPin,
       zone: s.zone,
       fault: s.fault,
       warnings: s.warnings ?? [],

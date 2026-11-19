@@ -40,7 +40,10 @@ export function StatusStrip({ v }: { v: DeviceView }) {
         <div className="tile-v">
           <Icon name="drop" /> {ZONE_TEXT[v.zone].short}
         </div>
-        <div className="tile-s">{v.mode === 'AWD' && v.zone === 'BETWEEN' ? (v.filling ? 'Filling up to +5 cm' : 'Drying down to −15 cm') : ZONE_TEXT[v.zone].long}</div>
+        <div className="tile-s floats">
+          <span className={`fl ${v.floatLow.toLowerCase()}`}>Float −15: {v.floatLow}</span>
+          <span className={`fl ${v.floatHigh.toLowerCase()}`}>Float +5: {v.floatHigh}</span>
+        </div>
       </div>
       <div className={`tile health ${health.cls}`}>
         <div className="tile-k">Health</div>

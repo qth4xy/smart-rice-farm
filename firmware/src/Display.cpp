@@ -77,17 +77,24 @@ void Display::pageMain(const Snapshot& s) {
     g_oled.drawHLine(0, y, 4);
   }
 
-  g_oled.setFont(u8g2_font_6x10_tf);
+  // Float states, big enough to read on the bench: debounced state + raw switch.
+  auto fs = [](FloatState f) { return f == FloatState::WET ? "WET" : f == FloatState::DRY ? "DRY" : "..."; };
   char b[24];
-  snprintf(b, sizeof b, "Zone %s", zoneName(s.zone));
-  g_oled.drawStr(32, 27, b);
-  const char* phase = s.manual ? "Manual run" : s.pump ? "Filling" : s.mode == Mode::OFF ? "Auto off" : "Drying";
-  g_oled.drawStr(32, 39, phase);
-  snprintf(b, sizeof b, "L:%s H:%s", s.low == FloatState::WET ? "WET" : s.low == FloatState::DRY ? "DRY" : "?",
-           s.high == FloatState::WET ? "WET" : s.high == FloatState::DRY ? "DRY" : "?");
-  g_oled.drawStr(32, 51, b);
+  g_oled.setFont(u8g2_font_6x10_tf);
+  g_oled.drawStr(32, 26, "Low -15");
+  g_oled.drawStr(32, 46, "High +5");
   g_oled.setFont(u8g2_font_7x14B_tf);
-  g_oled.drawStr(32, 63, s.warnings ? "OK  WARN" : "OK");
+  g_oled.drawStr(82, 27, fs(s.low));
+  g_oled.drawStr(82, 47, fs(s.high));
+  g_oled.setFont(u8g2_font_5x8_tf);
+  snprintf(b, sizeof b, "sw %s", s.lowRaw == 0 ? "CLOSED" : "OPEN");
+  g_oled.drawStr(32, 35, b);
+  snprintf(b, sizeof b, "sw %s", s.highRaw == 0 ? "CLOSED" : "OPEN");
+  g_oled.drawStr(32, 55, b);
+  g_oled.setFont(u8g2_font_6x10_tf);
+  const char* phase = s.manual ? "Manual" : s.pump ? "Filling" : s.mode == Mode::OFF ? "Auto off" : "Drying";
+  snprintf(b, sizeof b, "%s%s", phase, s.warnings ? " WARN" : "");
+  g_oled.drawStr(32, 64, b);
 }
 
 void Display::pageSensors(const Snapshot& s) {
@@ -195,7 +202,14 @@ void Display::pageTest(const Snapshot& s) {
 void Display::update(uint32_t nowMs, const Snapshot& s) {
   if (!ok_ || nowMs - lastDraw_ < OLED_REFRESH_MS) return;
   lastDraw_ = nowMs;
-  if (nowMs - pageSince_ >= OLED_PAGE_MS) {
+  // A float switch moved: jump to the float page and hold it for 10 s.
+  const uint8_t raw = static_cast<uint8_t>((s.lowRaw == 0) | (s.highRaw == 0) << 1);
+  if (raw != lastRaw_) {
+    lastRaw_ = raw;
+    page_ = 0;
+    pageSince_ = nowMs + 6000;  // 4 s page time + 6 s extra
+  }
+  if (static_cast<int32_t>(nowMs - pageSince_) >= static_cast<int32_t>(OLED_PAGE_MS)) {
     pageSince_ = nowMs;
     page_ = (page_ + 1) % 4;
   }

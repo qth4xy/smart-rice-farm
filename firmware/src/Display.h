@@ -26,6 +26,7 @@ class Display {
   uint8_t page_ = 0;
   uint32_t pageSince_ = 0;
   uint32_t lastDraw_ = 0;
+  uint8_t lastRaw_ = 0xFF;
 };
 
 // "45s", "3m05s", "2h46m", "3d04h"

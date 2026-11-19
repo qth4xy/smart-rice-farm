@@ -121,8 +121,8 @@ export function CrossSection({ v }: { v: DeviceView }) {
 
       {/* floats */}
       {[
-        { cm: 5, wet: highWet, name: 'FLOAT HIGH', job: 'stop' },
-        { cm: -15, wet: lowWet, name: 'FLOAT LOW', job: 'start' },
+        { cm: 5, wet: highWet, name: 'FLOAT HIGH', job: 'stop', pin: v.floatHighPin },
+        { cm: -15, wet: lowWet, name: 'FLOAT LOW', job: 'start', pin: v.floatLowPin },
       ].map((f) => (
         <g key={f.name} className={f.wet ? 'float wet' : 'float dry'}>
           <circle cx={PIPE_X + PIPE_W / 2} cy={y(f.cm)} r={11} />
@@ -133,6 +133,11 @@ export function CrossSection({ v }: { v: DeviceView }) {
           <text className="sub" x={PIPE_X + PIPE_W + 28} y={y(f.cm) + 20}>
             {f.wet ? 'WET' : 'DRY'} · {f.job}s pump
           </text>
+          {f.pin && (
+            <text className={f.pin === 'CLOSED' ? 'sub pin closed' : 'sub pin'} x={PIPE_X + PIPE_W + 28} y={y(f.cm) + 42}>
+              switch {f.pin}
+            </text>
+          )}
         </g>
       ))}
 

@@ -231,7 +231,8 @@ void App::publishState(const Snapshot& s) {
                        s.warnings << 8 | static_cast<uint32_t>(s.manual) << 12 |
                        static_cast<uint32_t>(s.low) << 13 | static_cast<uint32_t>(s.high) << 15 |
                        static_cast<uint32_t>(s.muted) << 17 | static_cast<uint32_t>(s.stage) << 18 |
-                       static_cast<uint32_t>(s.net.mqttConnected) << 22;
+                       static_cast<uint32_t>(s.net.mqttConnected) << 22 |
+                       static_cast<uint32_t>(s.lowRaw == 0) << 23 | static_cast<uint32_t>(s.highRaw == 0) << 24;
   if (key == lastStateKey_ && ms - lastTelemetry_ < TELEMETRY_MS) return;
   lastStateKey_ = key;
   lastTelemetry_ = ms ? ms : 1;
@@ -246,6 +247,8 @@ void App::publishState(const Snapshot& s) {
   d["filling"] = s.filling;
   d["floatLow"] = floatName(s.low);
   d["floatHigh"] = floatName(s.high);
+  d["floatLowPin"] = s.lowRaw == 0 ? "CLOSED" : "OPEN";  // raw switch, before debounce
+  d["floatHighPin"] = s.highRaw == 0 ? "CLOSED" : "OPEN";
   d["zone"] = zoneName(s.zone);
   if (s.fault == Fault::NONE) d["fault"] = nullptr;
   else d["fault"] = faultName(s.fault);

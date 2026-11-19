@@ -36,6 +36,9 @@ export interface DeviceView {
   filling: boolean;
   floatLow: FloatState;
   floatHigh: FloatState;
+  /** Raw switch state before debounce (live only), for bench wiring checks. */
+  floatLowPin?: 'OPEN' | 'CLOSED';
+  floatHighPin?: 'OPEN' | 'CLOSED';
   zone: Zone;
   fault: Fault | null;
   warnings: Warning[];

@@ -280,6 +280,21 @@ p {
   font-size: 2rem;
   padding-top: 0.2rem;
 }
+.tile-s.floats {
+  display: flex;
+  gap: 0.8rem;
+}
+.fl.wet {
+  color: var(--water);
+  font-weight: 700;
+}
+.fl.dry {
+  color: var(--ink-2);
+}
+.xsec .pin.closed {
+  fill: var(--ok);
+  font-weight: 700;
+}
 .tile.pump .tile-v {
   color: var(--idle);
 }

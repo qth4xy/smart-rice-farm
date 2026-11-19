@@ -40,6 +40,7 @@ fields; never rename or remove one.
 | `manual` | bool | a manual run is active |
 | `filling` | bool | the AWD fill latch |
 | `floatLow`, `floatHigh` | `WET` \| `DRY` \| `UNKNOWN` | debounced |
+| `floatLowPin`, `floatHighPin` | `OPEN` \| `CLOSED` | raw switch before debounce (wiring checks); a change is published at once |
 | `zone` | `BELOW` \| `BETWEEN` \| `ABOVE` \| `INVALID` \| `UNKNOWN` | see control-logic.md |
 | `fault` | `FLOAT_CONFLICT` \| `PUMP_TIMEOUT` \| null | latched |
 | `warnings` | string[] | `FLOAT_LOW_SUSPECT`, `SLOW_FILL`, `FAST_DRAIN` |
