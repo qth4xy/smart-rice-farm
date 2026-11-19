@@ -94,6 +94,10 @@ void setup() {
   pumpWrite(false);
   pinMode(PIN_BUZZER, OUTPUT);
   buzzerWrite(false);
+  // Buzzer self-test: sound for 3 s at power-on, then silent.
+  buzzerWrite(true);
+  delay(BUZZER_SELFTEST_MS);
+  buzzerWrite(false);
 
   pinMode(PIN_FLOAT_LOW, INPUT_PULLUP);
   pinMode(PIN_FLOAT_HIGH, INPUT_PULLUP);
