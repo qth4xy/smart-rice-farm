@@ -2,7 +2,7 @@
 #pragma once
 #include <stdint.h>
 
-#define FW_VERSION "0.4.2"
+#define FW_VERSION "0.4.3"
 
 // ---------------- Pins ----------------
 constexpr int PIN_I2C_SDA = 8;
@@ -24,8 +24,10 @@ constexpr bool BUZZER_ACTIVE_HIGH = false;
 // Buzzer self-test at power-on.
 constexpr uint32_t BUZZER_SELFTEST_MS = 3000;
 // Float switch closed (pin reads LOW with the pull-up) means WET?
-constexpr bool FLOAT_LOW_CLOSED_IS_WET = true;
-constexpr bool FLOAT_HIGH_CLOSED_IS_WET = true;
+// Bench-verified 2026-11-20: these floats are mounted normally-closed: CLOSED when dry, OPEN in
+// water. Side benefit: a broken wire reads WET, so the pump does not start (fail-safe, no overflow).
+constexpr bool FLOAT_LOW_CLOSED_IS_WET = false;
+constexpr bool FLOAT_HIGH_CLOSED_IS_WET = false;
 
 // ---------------- OLED ----------------
 constexpr uint8_t OLED_ADDR_PRIMARY = 0x3C;

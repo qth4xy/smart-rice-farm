@@ -21,8 +21,10 @@ Full spec: `docs/PROMPT.md`. Decisions below override the spec where they differ
 - Hosting: GitHub qth4xy/smart-rice-farm (public) → Vercel project txch-whiz/smart-rice-farm,
   https://smart-rice-farm.vercel.app, Root Directory `web`, deploys on push to main (replaces GitHub Pages).
   CI: .github/workflows/firmware.yml + web.yml.
-- Status 2026-11-19: phases 0-6 done, phase 7 done except the v1.0.0 tag, which waits for the
-  hand test of the floats (both read OPEN=DRY at rest; polarity flags in config.h).
+- Floats (2026-11-20): normally-closed mount, CLOSED=dry / OPEN=water, so *_CLOSED_IS_WET=false
+  (verified in water: both WET, zone ABOVE). Fail-safe: a broken wire reads WET.
+- Status 2026-11-20: phases 0-7 done except the v1.0.0 tag, which waits for the hand walk
+  through the state table (HIGH out -> BETWEEN, LOW out -> BELOW, LOW in, HIGH in).
 
 ## Safety rules (never break)
 - Pump OFF at boot (first line of setup), on any fault and on a crash (task watchdog on).

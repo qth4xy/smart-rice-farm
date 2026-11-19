@@ -75,3 +75,9 @@ Do not use: GPIO0/3/45/46 as outputs (strapping), GPIO19/20 (native USB), GPIO26
 - FLOAT_LOW at 5 cm from the pipe bottom (−15 cm), FLOAT_HIGH at 25 cm (+5 cm).
 - Mount the floats so that "water at or above the float" gives a clear switch state. If WET
   turns out to mean OPEN, flip `FLOAT_LOW_CLOSED_IS_WET` / `FLOAT_HIGH_CLOSED_IS_WET`.
+- **This build (bench-verified 2026-11-20):** the vertical reed floats are mounted normally-closed:
+  switch CLOSED when dry, OPEN in water, so both flags are `false`. This is fail-safe: a broken
+  float wire reads WET, so the pump does not start and the field cannot overflow (the soil
+  moisture check still warns if the field dries out).
+- The OLED main page and the dashboard show each float's raw switch (OPEN/CLOSED) for wiring
+  checks. The serial command `pinscan` reports which GPIO a wire touched to GND is on.
