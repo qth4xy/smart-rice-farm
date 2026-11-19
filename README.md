@@ -12,7 +12,7 @@ the real AWD control logic, an offline simulator for the presentation and a live
 | Firmware | ESP32-S3 (PlatformIO, Arduino): floats, pump, soil moisture, DHT11, OLED, buzzer, Wi-Fi portal, MQTT over TLS |
 | Dashboard | Vite + React + TypeScript: simulator with six scenarios, live mode over MQTT/WebSockets, presentation mode |
 | Offline demo | `presentation.html`: one file, double-click, no internet |
-| Hosted | Vercel (deploys `web/` from this repo) |
+| Hosted | **https://smart-rice-farm.vercel.app** (Vercel, auto-deploys `web/` on every push to `main`) |
 
 ## How it works
 
