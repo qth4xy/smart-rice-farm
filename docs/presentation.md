@@ -70,6 +70,18 @@ Start the guided tour (`T`) or step through with `→`.
 
 ## Live part (with the scale model)
 
-1. Power the board and the pump supply. The OLED shows the network page with the topic root.
-2. Switch the dashboard to Live (Phase 6) and check the badge reads **LIVE · srf-cc2468**.
-3. Lift the floats by hand to walk through the state table in front of the judges.
+1. Power the board and the pump supply. Wait for the OLED network page to say **MQTT connected**
+   and note the **Root** shown there.
+2. In the dashboard click **Live** (top right). The first time, enter the topic root from the OLED
+   (broker `wss://broker.hivemq.com:8884/mqtt` and device `srf-cc2468` are pre-filled). The
+   settings are kept in this browser; the password only if "remember" is ticked.
+3. Check the badge reads **LIVE · srf-cc2468** and the caption says **Connected**.
+4. Lift the floats by hand to walk through the state table in front of the judges.
+5. Mode and pump buttons ask for confirmation before anything is sent to the real device; the
+   device's answer (ack) appears as a short notice.
+
+In live mode the chart shows float **zones** and pump periods since the page was opened. There is
+no continuous level line, because the floats only tell which band the water is in.
+
+If the live page says "Waiting for the device…" for more than ~20 s, the public broker may be slow
+or the venue network may block port 8884. Switch back to **Simulation**; it never needs a network.

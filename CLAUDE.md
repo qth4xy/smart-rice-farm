@@ -36,6 +36,7 @@ OLED SDA 8 / SCL 9 · Soil 1 (ADC1) · DHT11 4 · FLOAT_LOW 5 · FLOAT_HIGH 6 ·
 - Web: `cd web && npm run dev | npm test | npm run build | npm run build:single` (-> dist-single/presentation.html)
 - Web screenshots (file://, offline, 3 sizes, fails on scroll/page errors/network): `cd web && npm run screenshots`
 - Node is at C:\Program Files\nodejs (prepend to PATH in PowerShell sessions).
+- Live end-to-end (real device via public broker): `cd web && SRF_ROOT=<root> npm run build:single && node scripts/live-e2e.mjs`
 
 ## Layout
 docs/ firmware/ web/ shared/ tools/ .github/workflows/ — see docs/PROMPT.md §8.

@@ -1004,6 +1004,128 @@ dialog.settings h2 {
   }
 }
 
+/* ---------------- live mode ---------------- */
+.seg-switch {
+  display: inline-flex;
+  border: 2px solid var(--line);
+  border-radius: 0.55rem;
+  overflow: hidden;
+}
+.seg-switch button {
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  padding: 0.3rem 0.7rem;
+  background: var(--panel);
+  color: var(--ink-2);
+  border: 0;
+  cursor: pointer;
+}
+.seg-switch button.on {
+  background: var(--ink);
+  color: var(--bg);
+}
+.lg-band {
+  height: 0.8rem;
+  background: var(--water-fill);
+  border: 2px solid var(--water);
+  border-radius: 3px;
+}
+.conn-dot {
+  display: inline-block;
+  width: 0.8rem;
+  height: 0.8rem;
+  border-radius: 50%;
+  background: var(--idle);
+  margin-right: 0.3rem;
+}
+.conn-dot.connected {
+  background: var(--ok);
+}
+.conn-dot.connecting,
+.conn-dot.reconnecting {
+  background: var(--pump);
+}
+.conn-dot.error {
+  background: var(--fault);
+}
+.waiting {
+  min-height: 0;
+  display: grid;
+  place-items: center;
+}
+.waiting-card {
+  max-width: 46rem;
+  gap: 0.8rem;
+  padding: 1.4rem 1.6rem;
+  font-size: 1.05rem;
+}
+.waiting-card h2 {
+  font-size: 1.4rem;
+  align-items: center;
+}
+.waiting-card .btn {
+  align-self: flex-start;
+}
+.waiting-card code {
+  background: var(--panel-2);
+  padding: 0.05rem 0.35rem;
+  border-radius: 0.3rem;
+}
+.err {
+  color: var(--fault);
+  font-weight: 600;
+}
+.toast {
+  position: fixed;
+  bottom: 5.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--panel-2);
+  border: 3px solid var(--ok);
+  border-radius: 0.6rem;
+  padding: 0.6rem 1.1rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  z-index: 10;
+}
+.toast.ok .icon {
+  color: var(--ok);
+}
+.toast.bad {
+  border-color: var(--fault);
+}
+.toast.bad .icon {
+  color: var(--fault);
+}
+.field input.wide {
+  width: 18rem;
+  text-align: left;
+}
+.field.check input {
+  width: 1.3rem;
+  height: 1.3rem;
+}
+dialog.confirm h2 {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  color: var(--pump);
+}
+dialog.confirm p {
+  margin: 0.4rem 0 0.2rem;
+  color: var(--ink-2);
+}
+.btn.danger-fill {
+  background: var(--fault);
+  border-color: var(--fault);
+  color: #fff;
+}
+
 /* short screens (720p): drop the explanatory note under the table, the caption carries the story */
 @media (max-height: 800px) and (min-aspect-ratio: 3/2) {
   .logic-note {
