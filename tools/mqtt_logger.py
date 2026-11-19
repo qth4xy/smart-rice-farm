@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 """Smart Rice Farm MQTT logger.
 
-Subscribes to srf/<device>/state and srf/<device>/event and appends them to CSV files for later
+Subscribes to <root>/<device>/state, event and status and appends them to CSV files for later
 analysis (and future ML). One row per message; nothing is invented or interpolated.
 
     pip install paho-mqtt==2.1.0
-    python tools/mqtt_logger.py --host <cluster>.hivemq.cloud --user <user> --device srf-cc2468
+    # HiveMQ public broker (default host), TLS on 8883, no login. The root is shown on the OLED.
+    python tools/mqtt_logger.py --root srf-7c8c8fcb
+    # HiveMQ Cloud / private broker:
+    python tools/mqtt_logger.py --host <cluster>.hivemq.cloud --user <user> --root srf
     (password from --password or the SRF_MQTT_PASS environment variable)
 """
 from __future__ import annotations
@@ -44,7 +47,9 @@ class CsvSink:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--host", required=True)
+    ap.add_argument("--host", default=os.environ.get("SRF_MQTT_HOST", "broker.hivemq.com"))
+    ap.add_argument("--root", default=os.environ.get("SRF_MQTT_ROOT", "srf"),
+                    help="topic root shown on the device OLED, e.g. srf-7c8c8fcb")
     ap.add_argument("--port", type=int, default=None, help="default 8883 with TLS, 1883 without")
     ap.add_argument("--user", default=os.environ.get("SRF_MQTT_USER"))
     ap.add_argument("--password", default=os.environ.get("SRF_MQTT_PASS"))
@@ -70,7 +75,7 @@ def main() -> int:
             print(f"connect failed: {reason}", file=sys.stderr)
             return
         for leaf in ("state", "event", "status"):
-            c.subscribe(f"srf/{args.device}/{leaf}", qos=1)
+            c.subscribe(f"{args.root}/{args.device}/{leaf}", qos=1)
         print(f"connected to {args.host}:{port}, logging to {out.resolve()}")
 
     def on_message(_c, _userdata, msg):

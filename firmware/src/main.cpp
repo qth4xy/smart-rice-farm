@@ -12,7 +12,7 @@ static App g_app;
 static void printHelp() {
   Serial.println(
       "Commands:\n"
-      "  help | status | test (toggle raw test page)\n"
+      "  help | status | net | test (toggle raw test page)\n"
       "  mode awd|flood|off        pump on <seconds> | pump off\n"
       "  clear                     clear a latched fault\n"
       "  mute <minutes> | unmute   cal dry | cal wet (soil calibration)\n"
@@ -59,6 +59,7 @@ static void handleLine(String line) {
 
   if (a[0] == "help") return printHelp();
   if (a[0] == "status") return printStatus();
+  if (a[0] == "net") return g_app.printNet();
   if (a[0] == "json") {
     if (deserializeJson(cmd, line.substring(5))) {
       Serial.println("bad JSON");

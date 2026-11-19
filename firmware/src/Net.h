@@ -8,12 +8,13 @@
 #include "Snapshot.h"
 
 struct MqttSettings {
-  char host[64] = "";
+  char host[64] = "broker.hivemq.com";  // HiveMQ public broker: no account needed
   uint16_t port = 8883;
   char user[48] = "";
   char pass[64] = "";
   bool tls = true;
   bool insecure = false;  // skip certificate check: demos only
+  char root[24] = "srf";   // topic root; a random one is generated on first boot
 };
 
 class Net {
@@ -27,6 +28,7 @@ class Net {
   bool popCommand(char* buf, size_t len);        // MQTT commands for App::runCommand
   NetStatus status();
   void requestPortal();
+  void printDiagnostics();  // serial `net` command (password never printed)
 
   // ---- internal (net task) ----
   void taskLoop();

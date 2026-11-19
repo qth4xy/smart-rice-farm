@@ -15,7 +15,9 @@ Full spec: `docs/PROMPT.md`. Decisions below override the spec where they differ
   Floats not yet tested by hand (both read OPEN at rest).
 - Toolchain: PlatformIO's downloader stalls on this network. Fetch packages with curl and
   `pio pkg install -g -t <file>`, then fix `.piopm` spec to the registry owner/name/id.
-- Broker: HiveMQ Cloud (TLS 8883 for the device, wss 8884 for the web). Local Mosquitto is a backup.
+- Broker (2026-11-19): HiveMQ PUBLIC broker for now: device broker.hivemq.com:8883 TLS (Amazon Root CA 1),
+  web wss://broker.hivemq.com:8884/mqtt. Topics `<root>/<deviceId>/...`, root random per device
+  (this board: srf-7c8c8fcb). HiveMQ Cloud (private) stays supported; local Mosquitto is a backup.
 - Hosting: GitHub repo `smart-rice-farm` (public) → Vercel (replaces GitHub Pages in the spec).
 
 ## Safety rules (never break)

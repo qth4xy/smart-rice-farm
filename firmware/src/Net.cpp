@@ -43,6 +43,7 @@ WiFiClient g_plain;
 WiFiClientSecure g_secure;
 PubSubClient g_mqtt;
 Net* g_self = nullptr;
+TaskHandle_t netTaskHandle = nullptr;
 char g_cmdTopic[48] = "";
 
 WiFiManagerParameter* p_host;
@@ -51,6 +52,17 @@ WiFiManagerParameter* p_user;
 WiFiManagerParameter* p_pass;
 WiFiManagerParameter* p_tls;
 WiFiManagerParameter* p_insecure;
+WiFiManagerParameter* p_root;
+
+bool validRoot(const char* s) {
+  const size_t n = strlen(s);
+  if (n < 3 || n > 23) return false;
+  for (size_t i = 0; i < n; i++) {
+    const char c = s[i];
+    if (!((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '-' || c == '_')) return false;
+  }
+  return true;
+}
 
 bool g_portalActive = false;
 bool g_needSave = false;
@@ -79,7 +91,7 @@ void Net::begin(const char* deviceId) {
   g_self = this;
   loadSettings();
   // Core 0, below the loop task's priority. 12 KB stack for TLS.
-  xTaskCreatePinnedToCore(netTask, "net", 12288, this, 1, nullptr, 0);
+  xTaskCreatePinnedToCore(netTask, "net", 12288, this, 1, &netTaskHandle, 0);
 }
 
 void Net::postEvent(const char* json) {
@@ -121,6 +133,21 @@ NetStatus Net::status() {
 
 void Net::requestPortal() { g_portalReq = true; }
 
+void Net::printDiagnostics() {
+  const NetStatus s = status();
+  Serial.printf("wifi: saved=%s connected=%s ssid='%s' ip=%s rssi=%d portal=%s ap=%s\n",
+                g_wm.getWiFiIsSaved() ? "yes" : "no", s.wifiConnected ? "yes" : "no", s.ssid, s.ip, s.rssi,
+                s.portalActive ? "open" : "closed", s.apName);
+  Serial.printf("mqtt: host='%s' port=%u user='%s' pass=%s tls=%d insecure=%d connected=%s state=%d time=%s\n"
+                "topics: %s/%s/{state,event,config,status,cmd}\n",
+                mqtt_.host, mqtt_.port, mqtt_.user, mqtt_.pass[0] ? "set" : "EMPTY", mqtt_.tls, mqtt_.insecure,
+                s.mqttConnected ? "yes" : "no", g_mqtt.state(), s.timeValid ? "synced" : "not synced", mqtt_.root,
+                deviceId_);
+  Serial.printf("net task stack free: %lu bytes, heap free: %lu\n",
+                (unsigned long)(netTaskHandle ? uxTaskGetStackHighWaterMark(netTaskHandle) : 0),
+                (unsigned long)ESP.getFreeHeap());
+}
+
 // ---------------- settings (NVS namespace "srfnet") ----------------
 void Net::loadSettings() {
 #ifdef SRF_MQTT_HOST
@@ -131,7 +158,14 @@ void Net::loadSettings() {
   mqtt_.tls = SRF_MQTT_TLS;
 #endif
   Preferences p;
-  if (!p.begin("srfnet", true)) return;
+  if (!p.begin("srfnet", false)) return;
+  // Topic root: random per device on first boot, so topics are not guessable on a public broker.
+  if (p.isKey("root")) {
+    p.getString("root", mqtt_.root, sizeof mqtt_.root);
+  } else {
+    snprintf(mqtt_.root, sizeof mqtt_.root, "srf-%08lx", (unsigned long)esp_random());
+    p.putString("root", mqtt_.root);
+  }
   if (p.isKey("host")) {
     p.getString("host", mqtt_.host, sizeof mqtt_.host);
     mqtt_.port = p.getUShort("port", mqtt_.port);
@@ -157,6 +191,7 @@ void Net::saveSettings() {
   }
   n.tls = strcmp(p_tls->getValue(), "0") != 0;
   n.insecure = strcmp(p_insecure->getValue(), "1") == 0;
+  if (validRoot(p_root->getValue())) strncpy(n.root, p_root->getValue(), sizeof n.root - 1);
 
   Preferences p;
   if (p.begin("srfnet", false)) {
@@ -166,15 +201,16 @@ void Net::saveSettings() {
     p.putString("pass", n.pass);
     p.putBool("tls", n.tls);
     p.putBool("insecure", n.insecure);
+    p.putString("root", n.root);
     p.end();
   }
   mqtt_ = n;
   settingsChanged_ = true;
-  Serial.printf("[NET] MQTT settings saved: %s:%u tls=%d user=%s\n", n.host, n.port, n.tls, n.user);
+  Serial.printf("[NET] MQTT settings saved: %s:%u tls=%d user=%s root=%s\n", n.host, n.port, n.tls, n.user, n.root);
 }
 
 void Net::topic(char* out, size_t len, const char* leaf) const {
-  snprintf(out, len, "srf/%s/%s", deviceId_, leaf);
+  snprintf(out, len, "%s/%s/%s", mqtt_.root, deviceId_, leaf);
 }
 
 // ---------------- the net task ----------------
@@ -200,6 +236,7 @@ void Net::updateStatus() {
     strncpy(s.ip, WiFi.localIP().toString().c_str(), sizeof s.ip - 1);
   }
   strncpy(s.apName, apName_, sizeof s.apName - 1);
+  strncpy(s.topicRoot, mqtt_.root, sizeof s.topicRoot - 1);
   portENTER_CRITICAL(&g_statusMux);
   g_status = s;
   portEXIT_CRITICAL(&g_statusMux);
@@ -229,7 +266,7 @@ void Net::mqttStep(uint32_t now) {
     if (static_cast<int32_t>(now - nextTry) < 0) return;
     if (mqtt_.tls) {
       if (mqtt_.insecure) g_secure.setInsecure();
-      else g_secure.setCACert(CA_ISRG_ROOT_X1);
+      else g_secure.setCACert(CA_BUNDLE);
       g_secure.setHandshakeTimeout(10);
       g_mqtt.setClient(g_secure);
     } else {
@@ -308,7 +345,8 @@ void Net::taskLoop() {
   p_pass = new WiFiManagerParameter("mqpass", "MQTT password (blank = keep current)", "", 63);
   p_tls = new WiFiManagerParameter("mqtls", "TLS 1=on 0=off", tlsStr, 1);
   p_insecure = new WiFiManagerParameter("mqins", "Skip cert check (demo only) 1=yes", insecureStr, 1);
-  for (auto* p : {p_host, p_port, p_user, p_pass, p_tls, p_insecure}) g_wm.addParameter(p);
+  p_root = new WiFiManagerParameter("mqroot", "Topic root (a-z 0-9 - _), keep it secret on a public broker", mqtt_.root, 23);
+  for (auto* p : {p_host, p_port, p_user, p_pass, p_tls, p_insecure, p_root}) g_wm.addParameter(p);
 
   WiFi.mode(WIFI_STA);
   WiFi.setAutoReconnect(true);

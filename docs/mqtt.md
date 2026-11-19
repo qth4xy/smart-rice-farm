@@ -3,7 +3,10 @@
 The website, the logger and the firmware all depend on this contract. Change it only by adding
 fields; never rename or remove one.
 
-- Base topic: `srf/<deviceId>/`, for example `srf/srf-cc2468/`.
+- Base topic: `<root>/<deviceId>/`, for example `srf-7c8c8fcb/srf-cc2468/`.
+- `<root>` is the topic root. Each device generates a random one (`srf-` + 8 hex digits) on first
+  boot and stores it in NVS; it can be changed in the setup portal. The OLED network page and the
+  serial `net` command show it. On a private broker you may set it to plain `srf`.
 - The device id is `srf-` plus the last 6 hex digits of the Wi-Fi MAC. It is also the MQTT client id.
 - Times (`ts`, `nextIrrigationEta`) are Unix seconds (UTC), or `null` before the clock is synced
   over NTP.
@@ -100,7 +103,26 @@ values are rejected (`ok:false` with an `error` message) and nothing changes.
 
 ## Brokers
 
-**HiveMQ Cloud** (main):
+**HiveMQ public broker** (current default, no account needed):
+
+| Client | Endpoint |
+|---|---|
+| Device (ESP32) | `broker.hivemq.com:8883`, TLS, no login. The certificate chains to Amazon Root CA 1, which is built into the firmware. |
+| Website on https (Vercel) | `wss://broker.hivemq.com:8884/mqtt` |
+| Local page or tools | `ws://broker.hivemq.com:8000/mqtt` or TCP `1883` (unencrypted, testing only) |
+
+The public broker is open to everyone. Anyone who subscribes to `#` can read every message, and
+anyone who knows the topic root can send commands. Our rules for it:
+
+- Send no passwords and no personal data. The device sends only farm readings and states.
+- The random topic root keeps casual users off our topics, but it is not access control.
+- What a stranger could do is limited by the firmware: every command is validated, a pump run is
+  capped by `pumpMaxRunS`, and faults stop the pump. This is acceptable for the 5 V scale model,
+  not for a real field pump.
+- There is no uptime guarantee. Irrigation never depends on the broker.
+- For a real deployment, use a private broker with logins and topic permissions (HiveMQ Cloud).
+
+**HiveMQ Cloud** (private, for real use):
 
 - Device: TLS on port **8883**. The certificate is checked against ISRG Root X1, which is built
   into the firmware.
@@ -120,6 +142,7 @@ values are rejected (`ok:false` with an `error` message) and nothing changes.
    point `SRF-Setup-<id>`. Holding BOOT for 5 s, the `wifiPortal` command or `wifi reset` on the
    serial console also open it.
 2. Join that Wi-Fi network from a phone. The portal page opens (or browse to 192.168.4.1).
-3. Choose the farm Wi-Fi network and fill in MQTT host, port, user, password and TLS. Leave the
-   password blank to keep the saved one.
+3. Choose the farm Wi-Fi network (2.4 GHz). The MQTT fields are pre-filled for the HiveMQ public
+   broker (`broker.hivemq.com`, 8883, TLS 1, no user), so they can stay as they are. For a private
+   broker, fill in host, port, user, password and TLS. Leave the password blank to keep the saved one.
 4. Save. The settings are stored in NVS, and the OLED network page shows the IP and MQTT status.

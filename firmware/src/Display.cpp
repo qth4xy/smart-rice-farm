@@ -111,26 +111,31 @@ void Display::pageSensors(const Snapshot& s) {
 
 void Display::pageNetwork(const Snapshot& s) {
   header("NETWORK", nullptr);
-  g_oled.setFont(u8g2_font_6x10_tf);
+  g_oled.setFont(u8g2_font_5x8_tf);  // 25 chars x 6 lines
   char b[40];
   if (s.net.portalActive) {
-    g_oled.drawStr(0, 27, "Setup portal open:");
-    g_oled.drawStr(0, 39, s.net.apName);
-    g_oled.drawStr(0, 51, "Join it, open 192.168.4.1");
+    g_oled.drawStr(0, 24, "Setup portal open. Join:");
+    g_oled.drawStr(0, 32, s.net.apName);
+    g_oled.drawStr(0, 40, "then open 192.168.4.1");
+    g_oled.drawStr(0, 48, "Irrigation keeps running");
   } else if (s.net.wifiConnected) {
-    snprintf(b, sizeof b, "%.14s %ddBm", s.net.ssid, s.net.rssi);
-    g_oled.drawStr(0, 27, b);
+    snprintf(b, sizeof b, "%.16s %ddBm", s.net.ssid, s.net.rssi);
+    g_oled.drawStr(0, 24, b);
     snprintf(b, sizeof b, "IP %s", s.net.ip);
-    g_oled.drawStr(0, 39, b);
+    g_oled.drawStr(0, 32, b);
     snprintf(b, sizeof b, "MQTT %s", s.net.mqttConnected ? "connected" : "offline");
-    g_oled.drawStr(0, 51, b);
+    g_oled.drawStr(0, 40, b);
+    snprintf(b, sizeof b, "Clock %s", s.net.timeValid ? "synced" : "not synced");
+    g_oled.drawStr(0, 48, b);
   } else {
-    g_oled.drawStr(0, 27, "Wi-Fi: offline");
-    g_oled.drawStr(0, 39, "Irrigation runs");
-    g_oled.drawStr(0, 51, "without network");
+    g_oled.drawStr(0, 24, "Wi-Fi: offline");
+    g_oled.drawStr(0, 32, "Irrigation runs");
+    g_oled.drawStr(0, 40, "without network");
   }
+  snprintf(b, sizeof b, "Root %s", s.net.topicRoot);
+  g_oled.drawStr(0, 56, b);
   snprintf(b, sizeof b, "ID %s", s.deviceId);
-  g_oled.drawStr(0, 63, b);
+  g_oled.drawStr(0, 64, b);
 }
 
 void Display::pageAnalytics(const Snapshot& s) {

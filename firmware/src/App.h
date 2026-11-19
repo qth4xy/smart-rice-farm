@@ -22,6 +22,7 @@ class App {
   void runCommand(JsonObjectConst cmd, JsonDocument& ack);
   Snapshot snapshot();
   const char* deviceId() const { return deviceId_; }
+  void printNet() { net_.printDiagnostics(); }
 
  private:
   uint64_t nowMs() const;

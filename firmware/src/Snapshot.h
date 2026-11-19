@@ -15,6 +15,7 @@ struct NetStatus {
   char ssid[33] = "";
   char ip[16] = "";
   char apName[32] = "";
+  char topicRoot[24] = "";
 };
 
 struct Snapshot {
