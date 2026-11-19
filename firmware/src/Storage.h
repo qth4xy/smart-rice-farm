@@ -13,6 +13,8 @@ struct PersistedSettings {
   int32_t floweringDay = srf::kNoDate;
   int soilRawDry = 0;
   int soilRawWet = 0;
+  bool floatLowClosedIsWet = true;
+  bool floatHighClosedIsWet = true;
 };
 
 class Storage {

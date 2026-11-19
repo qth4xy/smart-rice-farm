@@ -128,12 +128,23 @@ uint32_t AwdController::tick(uint64_t nowMs, const AwdInputs& in) {
     case Mode::OFF:
       filling_ = false;
       break;
-    case Mode::AWD:
-      if (lo == FloatState::DRY && hi == FloatState::DRY) filling_ = true;        // row 1
-      else if (lo == FloatState::WET && hi == FloatState::WET) filling_ = false;  // row 3
+    case Mode::AWD: {
+      const bool timed = cfg_.timedFillS > 0;
+      if (lo == FloatState::DRY && hi == FloatState::DRY) {  // row 1
+        // Timed fill rests pumpMinOffS between runs, so a field that stays dry is not pumped nonstop.
+        const bool restOk = !timed || !pumpHasRun_ ||
+                            nowMs - pumpOffSince_ >= static_cast<uint64_t>(cfg_.pumpMinOffS) * 1000;
+        if (!filling_ && restOk) filling_ = true;
+      } else if (lo == FloatState::WET && hi == FloatState::WET) {
+        filling_ = false;  // row 3
+      }
       // row 2 (WET/DRY): keep the latch
+      if (timed && filling_ && pump_ && nowMs - pumpOnSince_ >= static_cast<uint64_t>(cfg_.timedFillS) * 1000) {
+        filling_ = false;  // timed fill done
+      }
       if (soilBackupKick && cfg_.soilBackupCanStartPump && hi == FloatState::DRY) filling_ = true;
       break;
+    }
     case Mode::FLOOD:
       if (hi == FloatState::WET) {
         filling_ = false;

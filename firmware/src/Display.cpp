@@ -29,7 +29,7 @@ bool Display::begin() {
   }
   if (!addr) return ok_ = false;
   g_oled.setI2CAddress(addr << 1);
-  g_oled.setBusClock(400000);
+  g_oled.setBusClock(100000);  // 100 kHz: robust over long breadboard wires (400 kHz garbled lines)
   g_oled.begin();
   return ok_ = true;
 }
@@ -203,7 +203,15 @@ void Display::update(uint32_t nowMs, const Snapshot& s) {
   if (!ok_ || nowMs - lastDraw_ < OLED_REFRESH_MS) return;
   lastDraw_ = nowMs;
   // A float switch moved: jump to the float page and hold it for 10 s.
-  const uint8_t raw = static_cast<uint8_t>((s.lowRaw == 0) | (s.highRaw == 0) << 1);
+  // Re-initialise the controller every 30 s: a glitch on the I2C wires (touching the breadboard)
+  // can leave the SSD1306 frozen or garbled; this brings it back without a reboot.
+  if (nowMs - lastInit_ >= 30000) {
+    lastInit_ = nowMs;
+    g_oled.initDisplay();
+    g_oled.setPowerSave(0);
+  }
+  // Jump on a DEBOUNCED float change only, so a flickering switch cannot pin the screen.
+  const uint8_t raw = static_cast<uint8_t>(static_cast<uint8_t>(s.low) | static_cast<uint8_t>(s.high) << 2);
   if (raw != lastRaw_) {
     lastRaw_ = raw;
     page_ = 0;

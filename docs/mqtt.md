@@ -86,9 +86,10 @@ values are rejected (`ok:false` with an `error` message) and nothing changes.
 | `{"cmd":"setMode","mode":"AWD"}` | `mode`: `AWD` \| `FLOOD` \| `OFF` | saved to NVS |
 | `{"cmd":"pump","on":true,"seconds":30}` | `on` bool; `seconds` 1–3600 when on | capped at `pumpMaxRunS`; refused during a fault. `on:false` stops a manual run and any auto fill |
 | `{"cmd":"clearFault"}` | | re-raised at once if the cause is still there |
-| `{"cmd":"setConfig", ...}` | any of `debounceS` 0–60, `pumpMaxRunS` 10–3600, `pumpMinOffS` 0–3600, `soilDryAlertPct` 0–100, `soilBackupDelayS` 60–86400, `soilBackupCanStartPump` bool | at least one field |
+| `{"cmd":"setConfig", ...}` | any of `debounceS` 0–60, `pumpMaxRunS` 10–3600, `pumpMinOffS` 0–3600, `soilDryAlertPct` 0–100, `soilBackupDelayS` 60–86400, `soilBackupCanStartPump` bool, `timedFillS` 0–3600 (below `pumpMaxRunS`; 0 = float table) | at least one field |
 | `{"cmd":"setSchedule","transplantDate":"2026-12-01","floweringDate":"2027-02-15"}` | both `YYYY-MM-DD`, flowering after transplant; both `null` to clear | |
 | `{"cmd":"calibrateSoil","point":"dry"}` | `point`: `dry` \| `wet` | stores the current raw reading; ack includes `raw` |
+| `{"cmd":"calibrateFloats","state":"dry"}` | `state`: `dry` \| `wet` | both floats are in that state now; learns each float's polarity (NVS). Ack has the raw switches |
 | `{"cmd":"mute","minutes":30}` | 0–1440 (0 = unmute) | |
 | `{"cmd":"testPage","on":true}` | `on` bool | raw float/soil page on the OLED |
 | `{"cmd":"wifiPortal"}` | | opens the setup portal; irrigation keeps running |

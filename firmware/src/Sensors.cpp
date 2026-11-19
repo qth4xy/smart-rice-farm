@@ -21,8 +21,8 @@ void Sensors::pollFloats() {
   r_.highRaw = digitalRead(PIN_FLOAT_HIGH);
   const bool lowClosed = r_.lowRaw == LOW;
   const bool highClosed = r_.highRaw == LOW;
-  r_.lowWet = FLOAT_LOW_CLOSED_IS_WET ? lowClosed : !lowClosed;
-  r_.highWet = FLOAT_HIGH_CLOSED_IS_WET ? highClosed : !highClosed;
+  r_.lowWet = lowClosedIsWet_ ? lowClosed : !lowClosed;
+  r_.highWet = highClosedIsWet_ ? highClosed : !highClosed;
 }
 
 int Sensors::readSoilRawNow() {

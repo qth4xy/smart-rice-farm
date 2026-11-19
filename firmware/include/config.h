@@ -2,7 +2,7 @@
 #pragma once
 #include <stdint.h>
 
-#define FW_VERSION "0.4.3"
+#define FW_VERSION "0.5.0"
 
 // ---------------- Pins ----------------
 constexpr int PIN_I2C_SDA = 8;
@@ -23,9 +23,10 @@ constexpr bool PUMP_ACTIVE_HIGH = true;
 constexpr bool BUZZER_ACTIVE_HIGH = false;
 // Buzzer self-test at power-on.
 constexpr uint32_t BUZZER_SELFTEST_MS = 3000;
-// Float switch closed (pin reads LOW with the pull-up) means WET?
-// Bench-verified 2026-11-20: these floats are mounted normally-closed: CLOSED when dry, OPEN in
-// water. Side benefit: a broken wire reads WET, so the pump does not start (fail-safe, no overflow).
+// Float switch closed (pin reads LOW with the pull-up) means WET? DEFAULTS only: the real
+// polarity is learned per float with `floats dry` / {"cmd":"calibrateFloats","state":"dry"} and
+// kept in NVS. Default false = OPEN means WET, so a broken wire reads WET and the pump does not
+// start (fail-safe, no overflow).
 constexpr bool FLOAT_LOW_CLOSED_IS_WET = false;
 constexpr bool FLOAT_HIGH_CLOSED_IS_WET = false;
 

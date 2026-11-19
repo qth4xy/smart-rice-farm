@@ -150,6 +150,23 @@
       ]
     },
     {
+      "name": "timed fill: FLOAT_LOW DRY runs the pump timedFillS, rests pumpMinOffS, FLOAT_HIGH can still stop it",
+      "config": { "debounceS": 0, "timedFillS": 30, "pumpMinOffS": 60, "pumpMaxRunS": 300 },
+      "steps": [
+        { "t": 0, "low": "DRY", "high": "DRY", "expect": { "pump": true, "events": ["pump_on"] } },
+        { "t": 29, "expect": { "pump": true } },
+        { "t": 30, "expect": { "pump": false, "fault": null, "events": ["pump_off"] } },
+        { "t": 60, "expect": { "pump": false } },
+        { "t": 89, "expect": { "pump": false } },
+        { "t": 90, "expect": { "pump": true, "events": ["pump_on"] } },
+        { "t": 100, "low": "WET", "expect": { "pump": true, "zone": "BETWEEN" } },
+        { "t": 120, "expect": { "pump": false, "events": ["pump_off"] } },
+        { "t": 200, "expect": { "pump": false, "zone": "BETWEEN" } },
+        { "t": 300, "low": "DRY", "expect": { "pump": true, "events": ["pump_on"] } },
+        { "t": 310, "low": "WET", "high": "WET", "expect": { "pump": false, "zone": "ABOVE", "events": ["pump_off"] } }
+      ]
+    },
+    {
       "name": "analytics: cycle times, averages, ETA, SLOW_FILL and FAST_DRAIN",
       "config": { "debounceS": 0, "pumpMaxRunS": 1000 },
       "steps": [

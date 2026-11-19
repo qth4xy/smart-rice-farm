@@ -17,8 +17,9 @@ static void printHelp() {
       "  mode awd|flood|off        pump on <seconds> | pump off\n"
       "  clear                     clear a latched fault\n"
       "  mute <minutes> | unmute   cal dry | cal wet (soil calibration)\n"
+      "  floats dry | floats wet   learn float polarity (both floats in that state now)\n"
       "  set <key> <value>         debounceS pumpMaxRunS pumpMinOffS soilDryAlertPct\n"
-      "                            soilBackupDelayS soilBackupCanStartPump(true|false)\n"
+      "                            soilBackupDelayS soilBackupCanStartPump(true|false) timedFillS\n"
       "  schedule <YYYY-MM-DD transplant> <YYYY-MM-DD flowering> | schedule clear\n"
       "  wifi reset                open the Wi-Fi setup portal\n"
       "  mqtt root new | mqtt root <name>   change the MQTT topic root (serial only)\n"
@@ -118,6 +119,9 @@ static void handleLine(String line) {
   } else if (a[0] == "unmute") {
     cmd["cmd"] = "mute";
     cmd["minutes"] = 0;
+  } else if (a[0] == "floats" && n == 2) {
+    cmd["cmd"] = "calibrateFloats";
+    cmd["state"] = a[1];
   } else if (a[0] == "cal" && n == 2) {
     cmd["cmd"] = "calibrateSoil";
     cmd["point"] = a[1];

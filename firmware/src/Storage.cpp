@@ -25,12 +25,15 @@ void Storage::load(PersistedSettings& s) {
   s.awd.soilDryAlertPct = g_prefs.getUInt("soilPct", s.awd.soilDryAlertPct);
   s.awd.soilBackupDelayS = g_prefs.getUInt("soilDly", s.awd.soilBackupDelayS);
   s.awd.soilBackupCanStartPump = g_prefs.getBool("soilKick", s.awd.soilBackupCanStartPump);
+  s.awd.timedFillS = g_prefs.getUInt("timedFill", s.awd.timedFillS);
   const uint8_t m = g_prefs.getUChar("mode", static_cast<uint8_t>(s.mode));
   if (m <= static_cast<uint8_t>(srf::Mode::OFF)) s.mode = static_cast<srf::Mode>(m);
   s.transplantDay = g_prefs.getInt("tpDay", s.transplantDay);
   s.floweringDay = g_prefs.getInt("flDay", s.floweringDay);
   s.soilRawDry = g_prefs.getInt("calDry", s.soilRawDry);
   s.soilRawWet = g_prefs.getInt("calWet", s.soilRawWet);
+  s.floatLowClosedIsWet = g_prefs.getBool("flLowCW", s.floatLowClosedIsWet);
+  s.floatHighClosedIsWet = g_prefs.getBool("flHighCW", s.floatHighClosedIsWet);
 }
 
 void Storage::save(const PersistedSettings& s) {
@@ -40,12 +43,15 @@ void Storage::save(const PersistedSettings& s) {
   putU32("soilPct", s.awd.soilDryAlertPct);
   putU32("soilDly", s.awd.soilBackupDelayS);
   putBool("soilKick", s.awd.soilBackupCanStartPump);
+  putU32("timedFill", s.awd.timedFillS);
   const uint8_t m = static_cast<uint8_t>(s.mode);
   if (!g_prefs.isKey("mode") || g_prefs.getUChar("mode", m + 1) != m) g_prefs.putUChar("mode", m);
   putI32("tpDay", s.transplantDay);
   putI32("flDay", s.floweringDay);
   putI32("calDry", s.soilRawDry);
   putI32("calWet", s.soilRawWet);
+  putBool("flLowCW", s.floatLowClosedIsWet);
+  putBool("flHighCW", s.floatHighClosedIsWet);
 }
 
 struct AnalyticsBlob {

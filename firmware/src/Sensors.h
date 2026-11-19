@@ -23,6 +23,14 @@ class Sensors {
   void poll(uint32_t nowMs);     // soil + DHT on their own schedules
   const SensorReadings& r() const { return r_; }
 
+  // Float polarity: does a CLOSED switch mean WET? Per float, calibratable (NVS).
+  void setFloatPolarity(bool lowClosedIsWet, bool highClosedIsWet) {
+    lowClosedIsWet_ = lowClosedIsWet;
+    highClosedIsWet_ = highClosedIsWet;
+  }
+  bool lowClosedIsWet() const { return lowClosedIsWet_; }
+  bool highClosedIsWet() const { return highClosedIsWet_; }
+
   void setSoilCal(int rawDry, int rawWet);
   int soilRawDry() const { return rawDry_; }
   int soilRawWet() const { return rawWet_; }
@@ -37,4 +45,6 @@ class Sensors {
   uint32_t lastDht_ = 0;
   uint32_t lastDhtOk_ = 0;
   bool first_ = true;
+  bool lowClosedIsWet_ = true;
+  bool highClosedIsWet_ = true;
 };

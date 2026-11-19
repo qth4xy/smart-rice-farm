@@ -21,8 +21,10 @@ Full spec: `docs/PROMPT.md`. Decisions below override the spec where they differ
 - Hosting: GitHub qth4xy/smart-rice-farm (public) → Vercel project txch-whiz/smart-rice-farm,
   https://smart-rice-farm.vercel.app, Root Directory `web`, deploys on push to main (replaces GitHub Pages).
   CI: .github/workflows/firmware.yml + web.yml.
-- Floats (2026-11-20): normally-closed mount, CLOSED=dry / OPEN=water, so *_CLOSED_IS_WET=false
-  (verified in water: both WET, zone ABOVE). Fail-safe: a broken wire reads WET.
+- Floats (2026-11-20): polarity is learned per float with `floats dry` (NVS). LOW: CLOSED=dry.
+  HIGH float does not switch at all (faulty float or its GND wire), so the device runs AWD with
+  timedFillS=30 (pump 30 s when FLOAT_LOW is DRY, then rests pumpMinOffS=60 s). Verified: runS 30.
+  Float wiring lesson: the second float wire goes to GND, NOT 3V3 (pins have internal pull-ups).
 - Status 2026-11-20: phases 0-7 done except the v1.0.0 tag, which waits for the hand walk
   through the state table (HIGH out -> BETWEEN, LOW out -> BELOW, LOW in, HIGH in).
 

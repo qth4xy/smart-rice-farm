@@ -43,6 +43,8 @@ void App::begin() {
   settings_.awd.soilBackupCanStartPump = DEFAULT_SOIL_BACKUP_CAN_START_PUMP;
   settings_.soilRawDry = DEFAULT_SOIL_RAW_DRY;
   settings_.soilRawWet = DEFAULT_SOIL_RAW_WET;
+  settings_.floatLowClosedIsWet = FLOAT_LOW_CLOSED_IS_WET;
+  settings_.floatHighClosedIsWet = FLOAT_HIGH_CLOSED_IS_WET;
   if (storage_.begin()) {
     storage_.load(settings_);
     storage_.loadAnalytics(analytics_);
@@ -54,6 +56,7 @@ void App::begin() {
 
   sensors_.begin();
   sensors_.setSoilCal(settings_.soilRawDry, settings_.soilRawWet);
+  sensors_.setFloatPolarity(settings_.floatLowClosedIsWet, settings_.floatHighClosedIsWet);
   pinMode(PIN_BOOT, INPUT_PULLUP);
 
   net_.begin(deviceId_);  // runs on core 0; never blocks this loop
@@ -200,6 +203,7 @@ void App::publishConfig() {
   d["soilDryAlertPct"] = c.soilDryAlertPct;
   d["soilBackupDelayS"] = c.soilBackupDelayS;
   d["soilBackupCanStartPump"] = c.soilBackupCanStartPump;
+  d["timedFillS"] = c.timedFillS;
   d["floodAfterTransplantDays"] = FLOOD_AFTER_TRANSPLANT_DAYS;
   d["floweringWindowDays"] = FLOWERING_WINDOW_DAYS;
   char date[11];
@@ -218,6 +222,8 @@ void App::publishConfig() {
   }
   d["soilRawDry"] = settings_.soilRawDry;
   d["soilRawWet"] = settings_.soilRawWet;
+  d["floatLowClosedIsWet"] = settings_.floatLowClosedIsWet;
+  d["floatHighClosedIsWet"] = settings_.floatHighClosedIsWet;
   char buf[768];
   serializeJson(d, buf, sizeof buf);
   net_.setConfig(buf);
@@ -465,6 +471,7 @@ void App::runCommand(JsonObjectConst cmd, JsonDocument& ack) {
       else if (!strcmp(k, "pumpMinOffS")) u32In(0, 3600, c.pumpMinOffS);
       else if (!strcmp(k, "soilDryAlertPct")) u32In(0, 100, c.soilDryAlertPct);
       else if (!strcmp(k, "soilBackupDelayS")) u32In(60, 86400, c.soilBackupDelayS);
+      else if (!strcmp(k, "timedFillS")) u32In(0, 3600, c.timedFillS);
       else if (!strcmp(k, "soilBackupCanStartPump")) {
         if (!v.is<bool>()) err = "'soilBackupCanStartPump' must be true or false";
         else c.soilBackupCanStartPump = v.as<bool>();
@@ -472,6 +479,7 @@ void App::runCommand(JsonObjectConst cmd, JsonDocument& ack) {
       if (err) break;
     }
     if (!err && n == 0) err = "no settings given";
+    if (!err && c.timedFillS >= c.pumpMaxRunS) err = "timedFillS must be below pumpMaxRunS";
     if (!err) {
       ctl_.setConfig(c);
       persist();
@@ -512,6 +520,25 @@ void App::runCommand(JsonObjectConst cmd, JsonDocument& ack) {
         persist();
       }
       ack["raw"] = raw;
+    }
+  } else if (!strcmp(name, "calibrateFloats")) {
+    // Both floats are physically in the given state right now: learn each float's polarity.
+    const char* st = cmd["state"] | "";
+    if (!onlyKeys(cmd, {"cmd", "state"}, bad)) err = badField(bad);
+    else if (strcmp(st, "dry") && strcmp(st, "wet")) err = "state must be 'dry' or 'wet'";
+    else {
+      sensors_.pollFloats();
+      const bool lowClosed = sensors_.r().lowRaw == 0, highClosed = sensors_.r().highRaw == 0;
+      const bool wet = !strcmp(st, "wet");
+      // closed && closedIsWet == wet  ->  closedIsWet = closed ? wet : !wet
+      settings_.floatLowClosedIsWet = lowClosed ? wet : !wet;
+      settings_.floatHighClosedIsWet = highClosed ? wet : !wet;
+      sensors_.setFloatPolarity(settings_.floatLowClosedIsWet, settings_.floatHighClosedIsWet);
+      persist();
+      ack["lowSwitch"] = lowClosed ? "CLOSED" : "OPEN";
+      ack["highSwitch"] = highClosed ? "CLOSED" : "OPEN";
+      ack["lowClosedIsWet"] = settings_.floatLowClosedIsWet;
+      ack["highClosedIsWet"] = settings_.floatHighClosedIsWet;
     }
   } else if (!strcmp(name, "mute")) {
     if (!onlyKeys(cmd, {"cmd", "minutes"}, bad)) err = badField(bad);

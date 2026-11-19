@@ -83,6 +83,7 @@ static void applyConfig(AwdConfig& c, JsonObjectConst o) {
   if (o["soilDryAlertPct"].is<uint32_t>()) c.soilDryAlertPct = o["soilDryAlertPct"];
   if (o["soilBackupDelayS"].is<uint32_t>()) c.soilBackupDelayS = o["soilBackupDelayS"];
   if (o["soilBackupCanStartPump"].is<bool>()) c.soilBackupCanStartPump = o["soilBackupCanStartPump"];
+  if (o["timedFillS"].is<uint32_t>()) c.timedFillS = o["timedFillS"];
 }
 
 #define CHECK(cond, what)                                                         \

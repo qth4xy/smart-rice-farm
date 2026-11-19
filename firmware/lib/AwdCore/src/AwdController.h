@@ -15,6 +15,10 @@ struct AwdConfig {
   uint32_t soilDryAlertPct = 30;   // soil backup threshold
   uint32_t soilBackupDelayS = 600; // soil must stay dry this long (10 min)
   bool soilBackupCanStartPump = false;
+  // AWD timed fill: 0 = classic float table. >0 = when FLOAT_LOW is DRY, run the pump this many
+  // seconds (stopping early if FLOAT_HIGH goes WET), then rest pumpMinOffS before the next fill.
+  // For a build where FLOAT_HIGH is unavailable. Must be below pumpMaxRunS.
+  uint32_t timedFillS = 0;
 };
 
 struct AwdInputs {

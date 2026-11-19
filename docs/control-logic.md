@@ -71,6 +71,12 @@ stateDiagram-v2
 | `FLOOD` | FLOAT_HIGH only: DRY → ON, WET → OFF. After the pump stops it stays off for at least `pumpMinOffS` (60 s). The first run after boot may start immediately. |
 | `OFF` | the pump never runs automatically |
 
+**Timed fill** (`timedFillS` > 0, AWD only): for a build where FLOAT_HIGH is unavailable. When
+FLOAT_LOW is DRY the pump runs for `timedFillS` seconds, then rests at least `pumpMinOffS` before
+another run, so a field that stays dry is not pumped nonstop. FLOAT_HIGH going WET still stops it
+early, and `timedFillS` must stay below `pumpMaxRunS`. With `timedFillS` = 0 (the default) the
+classic float table applies. The scale model currently uses `timedFillS` = 30.
+
 Switching mode keeps an ongoing fill (AWD → FLOOD in the middle band keeps filling up to +5 cm).
 Switching to `OFF` stops it.
 

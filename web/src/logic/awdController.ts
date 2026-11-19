@@ -9,6 +9,8 @@ export interface AwdConfig {
   soilDryAlertPct: number;
   soilBackupDelayS: number;
   soilBackupCanStartPump: boolean;
+  /** 0 = float table. >0 = timed fill seconds when FLOAT_LOW is DRY (FLOAT_HIGH unavailable). */
+  timedFillS: number;
 }
 
 export const DEFAULT_CONFIG: Readonly<AwdConfig> = {
@@ -18,6 +20,7 @@ export const DEFAULT_CONFIG: Readonly<AwdConfig> = {
   soilDryAlertPct: 30,
   soilBackupDelayS: 600,
   soilBackupCanStartPump: false,
+  timedFillS: 0,
 };
 
 export interface AwdInputs {
@@ -212,11 +215,20 @@ export class AwdController {
       case 'OFF':
         this._filling = false;
         break;
-      case 'AWD':
-        if (lo === 'DRY' && hi === 'DRY') this._filling = true;
-        else if (lo === 'WET' && hi === 'WET') this._filling = false;
+      case 'AWD': {
+        const timed = this.cfg.timedFillS > 0;
+        if (lo === 'DRY' && hi === 'DRY') {
+          const restOk = !timed || !this.pumpHasRun || nowMs - this.pumpOffSince >= this.cfg.pumpMinOffS * 1000;
+          if (!this._filling && restOk) this._filling = true;
+        } else if (lo === 'WET' && hi === 'WET') {
+          this._filling = false;
+        }
+        if (timed && this._filling && this._pump && nowMs - this.pumpOnSince >= this.cfg.timedFillS * 1000) {
+          this._filling = false;
+        }
         if (soilBackupKick && this.cfg.soilBackupCanStartPump && hi === 'DRY') this._filling = true;
         break;
+      }
       case 'FLOOD':
         if (hi === 'WET') {
           this._filling = false;
