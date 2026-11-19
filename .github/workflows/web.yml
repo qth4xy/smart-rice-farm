@@ -1,0 +1,43 @@
+name: web
+
+on:
+  push:
+    paths: ['web/**', 'shared/**', '.github/workflows/web.yml']
+  pull_request:
+    paths: ['web/**', 'shared/**', '.github/workflows/web.yml']
+
+# Deployment is done by Vercel's GitHub integration (root directory: web).
+# This workflow tests, builds, checks the layout and publishes presentation.html as an artifact.
+jobs:
+  test-and-build:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - name: Unit tests (shared AWD vectors, scenarios, live model)
+        run: npm test
+      - name: Build hosted site
+        run: npm run build
+      - name: Build offline presentation.html
+        run: npm run build:single
+      - name: Layout check at 1920x1080, 1280x720, 1024x768 (file://, no network)
+        run: |
+          npx playwright install --with-deps chromium
+          npm run screenshots
+      - uses: actions/upload-artifact@v4
+        with:
+          name: presentation
+          path: web/dist-single/presentation.html
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: screenshots
+          path: web/screenshots/
