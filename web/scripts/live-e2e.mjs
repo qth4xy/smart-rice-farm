@@ -1,5 +1,5 @@
 // End-to-end check against the REAL device through the public broker.
-//   SRF_ROOT=<topic root from the OLED> node scripts/live-e2e.mjs
+//   SRF_ROOT=<topic root from the OLED> [SRF_URL=https://...] node scripts/live-e2e.mjs
 // Opens presentation.html from disk, switches to Live, waits for real data, sends a harmless
 // setMode command (the device's current mode) through the confirm dialog and waits for its ack.
 import { chromium } from '@playwright/test';
@@ -12,7 +12,8 @@ if (!root) {
   console.error('Set SRF_ROOT to the topic root shown on the device OLED.');
   process.exit(2);
 }
-const file = pathToFileURL(resolve('dist-single/presentation.html')).href;
+// SRF_URL tests a deployed site instead (e.g. https://smart-rice-farm.vercel.app).
+const file = process.env.SRF_URL ?? pathToFileURL(resolve('dist-single/presentation.html')).href;
 const browser = await chromium.launch();
 const ctx = await browser.newContext({ viewport: { width: 1920, height: 1080 } });
 await ctx.addInitScript(
