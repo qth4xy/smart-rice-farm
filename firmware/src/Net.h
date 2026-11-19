@@ -29,6 +29,9 @@ class Net {
   NetStatus status();
   void requestPortal();
   void printDiagnostics();  // serial `net` command (password never printed)
+  // Serial-only: change the topic root (nullptr or "" = new random one). Applied by the net task,
+  // which first clears the retained messages under the old root.
+  void requestNewRoot(const char* root);
 
   // ---- internal (net task) ----
   void taskLoop();

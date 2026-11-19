@@ -19,7 +19,8 @@ static void printHelp() {
       "  set <key> <value>         debounceS pumpMaxRunS pumpMinOffS soilDryAlertPct\n"
       "                            soilBackupDelayS soilBackupCanStartPump(true|false)\n"
       "  schedule <YYYY-MM-DD transplant> <YYYY-MM-DD flowering> | schedule clear\n"
-      "  wifi reset                open the Wi-Fi setup portal (Phase 4)\n"
+      "  wifi reset                open the Wi-Fi setup portal\n"
+      "  mqtt root new | mqtt root <name>   change the MQTT topic root (serial only)\n"
       "  reboot | json {\"cmd\":...}  raw MQTT-style JSON command");
 }
 
@@ -60,6 +61,7 @@ static void handleLine(String line) {
   if (a[0] == "help") return printHelp();
   if (a[0] == "status") return printStatus();
   if (a[0] == "net") return g_app.printNet();
+  if (a[0] == "mqtt" && n >= 2 && a[1] == "root") return g_app.newRoot(n >= 3 && a[2] != "new" ? a[2].c_str() : nullptr);
   if (a[0] == "json") {
     if (deserializeJson(cmd, line.substring(5))) {
       Serial.println("bad JSON");

@@ -17,7 +17,7 @@ Full spec: `docs/PROMPT.md`. Decisions below override the spec where they differ
   `pio pkg install -g -t <file>`, then fix `.piopm` spec to the registry owner/name/id.
 - Broker (2026-11-19): HiveMQ PUBLIC broker for now: device broker.hivemq.com:8883 TLS (Amazon Root CA 1),
   web wss://broker.hivemq.com:8884/mqtt. Topics `<root>/<deviceId>/...`, root random per device
-  (this board: srf-7c8c8fcb). HiveMQ Cloud (private) stays supported; local Mosquitto is a backup.
+  (the board's root is shown on its OLED; NEVER commit it, the repo is public. Rotate with serial `mqtt root new`). HiveMQ Cloud (private) stays supported; local Mosquitto is a backup.
 - Hosting: GitHub repo `smart-rice-farm` (public) → Vercel (replaces GitHub Pages in the spec).
 
 ## Safety rules (never break)

@@ -6,7 +6,7 @@ analysis (and future ML). One row per message; nothing is invented or interpolat
 
     pip install paho-mqtt==2.1.0
     # HiveMQ public broker (default host), TLS on 8883, no login. The root is shown on the OLED.
-    python tools/mqtt_logger.py --root srf-7c8c8fcb
+    python tools/mqtt_logger.py --root srf-xxxxxxxx
     # HiveMQ Cloud / private broker:
     python tools/mqtt_logger.py --host <cluster>.hivemq.cloud --user <user> --root srf
     (password from --password or the SRF_MQTT_PASS environment variable)
@@ -50,7 +50,7 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--host", default=os.environ.get("SRF_MQTT_HOST", "broker.hivemq.com"))
     ap.add_argument("--root", default=os.environ.get("SRF_MQTT_ROOT", "srf"),
-                    help="topic root shown on the device OLED, e.g. srf-7c8c8fcb")
+                    help="topic root shown on the device OLED, e.g. srf-xxxxxxxx")
     ap.add_argument("--port", type=int, default=None, help="default 8883 with TLS, 1883 without")
     ap.add_argument("--user", default=os.environ.get("SRF_MQTT_USER"))
     ap.add_argument("--password", default=os.environ.get("SRF_MQTT_PASS"))

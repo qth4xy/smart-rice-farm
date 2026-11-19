@@ -36,6 +36,8 @@ bool g_cfgDirty = false;
 NetStatus g_status;
 portMUX_TYPE g_statusMux = portMUX_INITIALIZER_UNLOCKED;
 volatile bool g_portalReq = false;
+volatile bool g_rootReq = false;
+char g_rootNew[24] = "";
 
 // ---------------- net-task-only objects ----------------
 WiFiManager g_wm;
@@ -132,6 +134,11 @@ NetStatus Net::status() {
 }
 
 void Net::requestPortal() { g_portalReq = true; }
+
+void Net::requestNewRoot(const char* root) {
+  strncpy(g_rootNew, root ? root : "", sizeof g_rootNew - 1);
+  g_rootReq = true;
+}
 
 void Net::printDiagnostics() {
   const NetStatus s = status();
@@ -384,6 +391,32 @@ void Net::taskLoop() {
     if (g_needSave) {
       g_needSave = false;
       saveSettings();
+    }
+    if (g_rootReq) {
+      g_rootReq = false;
+      char next[24];
+      if (g_rootNew[0] == 0) snprintf(next, sizeof next, "srf-%08lx", (unsigned long)esp_random());
+      else strncpy(next, g_rootNew, sizeof next - 1), next[sizeof next - 1] = 0;
+      if (!validRoot(next)) {
+        Serial.println("[NET] topic root rejected: use 3-23 chars a-z 0-9 - _");
+      } else {
+        if (g_mqtt.connected()) {  // remove our retained messages under the old root
+          char t[64];
+          for (const char* leaf : {"state", "config", "status"}) {
+            topic(t, sizeof t, leaf);
+            g_mqtt.publish(t, "", true);
+          }
+          g_mqtt.disconnect();
+        }
+        strncpy(mqtt_.root, next, sizeof mqtt_.root - 1);
+        Preferences p;
+        if (p.begin("srfnet", false)) {
+          p.putString("root", mqtt_.root);
+          p.end();
+        }
+        settingsChanged_ = true;
+        Serial.printf("[NET] topic root changed to %s (old retained messages cleared)\n", mqtt_.root);
+      }
     }
     const bool connected = WiFi.status() == WL_CONNECTED;
     if (connected && !everConnected) {

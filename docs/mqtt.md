@@ -3,7 +3,7 @@
 The website, the logger and the firmware all depend on this contract. Change it only by adding
 fields; never rename or remove one.
 
-- Base topic: `<root>/<deviceId>/`, for example `srf-7c8c8fcb/srf-cc2468/`.
+- Base topic: `<root>/<deviceId>/`, for example `srf-xxxxxxxx/srf-cc2468/`.
 - `<root>` is the topic root. Each device generates a random one (`srf-` + 8 hex digits) on first
   boot and stores it in NVS; it can be changed in the setup portal. The OLED network page and the
   serial `net` command show it. On a private broker you may set it to plain `srf`.
@@ -116,7 +116,9 @@ The public broker is open to everyone. Anyone who subscribes to `#` can read eve
 anyone who knows the topic root can send commands. Our rules for it:
 
 - Send no passwords and no personal data. The device sends only farm readings and states.
-- The random topic root keeps casual users off our topics, but it is not access control.
+- The random topic root keeps casual users off our topics, but it is not access control. Never
+  write a real root into this (public) repo. If one leaks, rotate it over USB with the serial
+  command `mqtt root new`; the device clears its retained messages under the old root first.
 - What a stranger could do is limited by the firmware: every command is validated, a pump run is
   capped by `pumpMaxRunS`, and faults stop the pump. This is acceptable for the 5 V scale model,
   not for a real field pump.
