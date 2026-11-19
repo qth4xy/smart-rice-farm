@@ -112,6 +112,7 @@ static void runCase(JsonObjectConst cs) {
     if (st["high"].is<const char*>()) in.highWet = strcmp(st["high"], "WET") == 0;
     if (st["soil"].is<int>()) in.soilPct = st["soil"];
 
+    if (st["carryRunS"].is<uint32_t>()) c.setCarryRunMs(st["carryRunS"].as<uint32_t>() * 1000);
     uint32_t ev = 0;
     bool cmdOk = true;
     JsonObjectConst cmd = st["cmd"];

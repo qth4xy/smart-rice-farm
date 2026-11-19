@@ -2,7 +2,7 @@
 #pragma once
 #include <stdint.h>
 
-#define FW_VERSION "0.5.1"
+#define FW_VERSION "0.5.2"
 
 // ---------------- Pins ----------------
 constexpr int PIN_I2C_SDA = 8;

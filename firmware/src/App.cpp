@@ -4,6 +4,8 @@
 #include <Wire.h>
 #include <esp_mac.h>
 #include <esp_task_wdt.h>
+#include <esp_attr.h>
+#include <esp_system.h>
 #include <esp_timer.h>
 #include <math.h>
 #include <string.h>
@@ -17,6 +19,30 @@ using namespace srf;
 
 static constexpr int64_t kBangkokOffsetS = 7 * 3600;  // UTC+7, no DST
 static constexpr int64_t kMinValidEpoch = 1700000000;
+
+// RTC memory survives a software reset, watchdog and brownout (not a full power-off). It holds the
+// auto pump run time of an unfinished fill, so a reset cannot restart the PUMP_TIMEOUT count.
+RTC_NOINIT_ATTR static uint32_t s_rtcMagic;
+RTC_NOINIT_ATTR static uint32_t s_rtcRunMs;
+static constexpr uint32_t kRtcMagic = 0x5AFE0001;
+
+static const char* resetName(esp_reset_reason_t r) {
+  switch (r) {
+    case ESP_RST_POWERON: return "power-on";
+    case ESP_RST_SW: return "software";
+    case ESP_RST_PANIC: return "crash";
+    case ESP_RST_INT_WDT:
+    case ESP_RST_TASK_WDT:
+    case ESP_RST_WDT: return "watchdog";
+    case ESP_RST_BROWNOUT: return "brownout";
+    case ESP_RST_EXT: return "reset-pin";
+    case ESP_RST_DEEPSLEEP: return "deep-sleep";
+    default: return "other";
+  }
+}
+static const char* g_resetReason = "unknown";
+
+const char* App::resetReason() { return g_resetReason; }
 
 uint64_t App::nowMs() const { return static_cast<uint64_t>(esp_timer_get_time() / 1000); }
 
@@ -55,6 +81,14 @@ void App::begin() {
   ctl_.setConfig(settings_.awd);
   ctl_.setMode(settings_.mode);
 
+  const esp_reset_reason_t rr = esp_reset_reason();
+  g_resetReason = resetName(rr);
+  uint32_t carried = 0;
+  if (rr != ESP_RST_POWERON && s_rtcMagic == kRtcMagic && s_rtcRunMs < 86400000UL) carried = s_rtcRunMs;
+  s_rtcMagic = kRtcMagic;
+  s_rtcRunMs = carried;
+  ctl_.setCarryRunMs(carried);
+
   sensors_.begin();
   sensors_.setSoilCal(settings_.soilRawDry, settings_.soilRawWet);
   sensors_.setFloatPolarity(settings_.floatLowClosedIsWet, settings_.floatHighClosedIsWet);
@@ -75,6 +109,8 @@ void App::begin() {
   d["fw"] = FW_VERSION;
   d["mode"] = modeName(ctl_.mode());
   d["reset"] = static_cast<int>(esp_reset_reason());
+  d["resetReason"] = g_resetReason;
+  d["carriedRunS"] = carried / 1000;
   emit("boot", d.as<JsonObjectConst>());
 }
 
@@ -120,6 +156,7 @@ void App::controlStep(uint64_t now) {
   in.soilPct = r.soilPct;
   uint32_t ev = ctl_.tick(now, in);
   pump_.set(ctl_.pump());
+  s_rtcRunMs = ctl_.unconfirmedRunMs(now);
   ev |= analytics_.update(now, ctl_.mode(), ctl_.pump(), ctl_.manualActive(), ctl_.floatLow(), ctl_.floatHigh());
   handleEvents(ev, nullptr);
 }
@@ -284,6 +321,7 @@ void App::publishState(const Snapshot& s) {
   else d["rssi"] = nullptr;
   d["dhtFails"] = s.dhtFails;
   d["uptimeS"] = s.uptimeS;
+  d["resetReason"] = g_resetReason;
   d["fw"] = FW_VERSION;
   char buf[1024];
   serializeJson(d, buf, sizeof buf);

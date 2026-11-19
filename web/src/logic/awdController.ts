@@ -69,6 +69,7 @@ export class AwdController {
   private pumpOnSince = 0;
   private pumpOffSince = 0;
   private pumpHasRun = false;
+  private carryMs = 0;
   private soilDryValid = false;
   private soilDrySince = 0;
 
@@ -150,10 +151,16 @@ export class AwdController {
     return true;
   }
 
+  /** Auto run time carried over from before a reset; counts toward pumpMaxRunS. */
+  setCarryRunMs(ms: number): void {
+    this.carryMs = ms;
+  }
+
   clearFault(): EventName[] {
     if (this._fault === null) return [];
     this._fault = null;
     this._filling = false;
+    this.carryMs = 0;
     return ['fault_cleared'];
   }
 
@@ -240,7 +247,7 @@ export class AwdController {
         break;
     }
 
-    if (this._filling && this._pump && nowMs - this.pumpOnSince >= this.cfg.pumpMaxRunS * 1000) {
+    if (this._filling && this._pump && nowMs - this.pumpOnSince + this.carryMs >= this.cfg.pumpMaxRunS * 1000) {
       this._filling = false;
       this.raise('PUMP_TIMEOUT', ev);
     }
@@ -264,6 +271,7 @@ export class AwdController {
     } else {
       this.pumpOffSince = nowMs;
       this.pumpHasRun = true;
+      this.carryMs = 0;
       ev.push('pump_off');
     }
   }

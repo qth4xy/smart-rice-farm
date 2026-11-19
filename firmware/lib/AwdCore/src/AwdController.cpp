@@ -53,6 +53,7 @@ uint32_t AwdController::clearFault() {
   if (fault_ == Fault::NONE) return 0;
   fault_ = Fault::NONE;
   filling_ = false;
+  carryMs_ = 0;
   return Ev::FAULT_CLEARED;
 }
 
@@ -71,6 +72,7 @@ uint32_t AwdController::setPump(bool on, uint64_t nowMs) {
   }
   pumpOffSince_ = nowMs;
   pumpHasRun_ = true;
+  carryMs_ = 0;  // a run that ended normally carries nothing over
   return Ev::PUMP_OFF;
 }
 
@@ -158,7 +160,7 @@ uint32_t AwdController::tick(uint64_t nowMs, const AwdInputs& in) {
 
   // Safety: continuous auto run limit.
   if (filling_ && pump_ &&
-      nowMs - pumpOnSince_ >= static_cast<uint64_t>(cfg_.pumpMaxRunS) * 1000) {
+      nowMs - pumpOnSince_ + carryMs_ >= static_cast<uint64_t>(cfg_.pumpMaxRunS) * 1000) {
     filling_ = false;
     ev |= raise(Fault::PUMP_TIMEOUT);
   }

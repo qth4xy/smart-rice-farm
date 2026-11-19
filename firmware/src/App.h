@@ -24,6 +24,7 @@ class App {
   const char* deviceId() const { return deviceId_; }
   void printNet() { net_.printDiagnostics(); }
   void newRoot(const char* root) { net_.requestNewRoot(root); }
+  static const char* resetReason();
 
  private:
   uint64_t nowMs() const;

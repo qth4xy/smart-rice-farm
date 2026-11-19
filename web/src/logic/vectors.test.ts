@@ -19,6 +19,7 @@ interface Step {
   low?: 'WET' | 'DRY';
   high?: 'WET' | 'DRY';
   soil?: number;
+  carryRunS?: number;
   cmd?: Record<string, unknown>;
   expect?: Record<string, unknown>;
 }
@@ -57,6 +58,7 @@ describe('shared AWD test vectors', () => {
         if (st.low) input.lowWet = st.low === 'WET';
         if (st.high) input.highWet = st.high === 'WET';
         if (typeof st.soil === 'number') input.soilPct = st.soil;
+        if (typeof st.carryRunS === 'number') c.setCarryRunMs(st.carryRunS * 1000);
 
         const ev: EventName[] = [];
         let cmdOk = true;

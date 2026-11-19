@@ -53,6 +53,14 @@ class AwdController {
   // or when seconds == 0. on=false: cancel a manual run and stop any auto fill.
   bool manualPump(bool on, uint32_t seconds, uint64_t nowMs);
   uint32_t clearFault();
+  // Auto run time carried over from before a reset (the pump was running and the chip restarted).
+  // It counts toward pumpMaxRunS, so repeated resets cannot keep a dry pump running forever.
+  void setCarryRunMs(uint32_t ms) { carryMs_ = ms; }
+  uint32_t carryRunMs() const { return carryMs_; }
+  // Run time that would carry over if the chip reset now (0 when the pump is off).
+  uint32_t unconfirmedRunMs(uint64_t nowMs) const {
+    return pump_ ? carryMs_ + static_cast<uint32_t>(nowMs - pumpOnSince_) : 0;
+  }
 
   // --- main step, call every ~50 ms ---
   uint32_t tick(uint64_t nowMs, const AwdInputs& in);
@@ -87,6 +95,7 @@ class AwdController {
   uint64_t pumpOnSince_ = 0;
   uint64_t pumpOffSince_ = 0;
   bool pumpHasRun_ = false;
+  uint32_t carryMs_ = 0;
   bool soilDryValid_ = false;
   uint64_t soilDrySince_ = 0;
 };

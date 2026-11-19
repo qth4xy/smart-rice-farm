@@ -38,6 +38,7 @@ static void printStatus() {
                 s.soilRaw, s.soilCalDry, s.soilCalWet,
                 s.dhtOk ? (String(s.airTempC, 1) + "C " + String(s.airRh, 0) + "%").c_str() : "DHT fail");
   formatDuration(s.avgDryingS, d, sizeof d);
+  Serial.printf("last reset=%s  ", App::resetReason());
   Serial.printf("cycles=%lu avgDrying=%s ", (unsigned long)s.totalCycles, d);
   formatDuration(s.avgFillS, d, sizeof d);
   Serial.printf("avgFill=%s nextPumpEst=%s muted=%s\n", d,

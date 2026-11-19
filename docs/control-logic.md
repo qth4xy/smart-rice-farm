@@ -93,6 +93,11 @@ mode `OFF` to stop for good.
 - **`PUMP_TIMEOUT`**: if an automatic run lasts `pumpMaxRunS` (default 300 s) without FLOAT_HIGH
   going WET, the pump stops and the fault latches. Possible causes: empty source, pump running dry,
   a leak or a stuck float.
+- **Resets do not reset the run limit.** The auto run time of an unfinished fill is kept in RTC
+  memory (it survives a software reset, the watchdog and a brownout, not a full power-off) and
+  counts toward `pumpMaxRunS` after the restart, so a board that keeps resetting while the pump
+  runs still hits `PUMP_TIMEOUT`. A run that ends normally carries nothing over. `state` and the
+  `boot` event include `resetReason`.
 - **`FLOAT_CONFLICT`**: LOW=DRY with HIGH=WET is physically impossible, so it means a stuck float
   or a wiring fault. It is checked in every mode.
 - Faults latch until `clearFault`. The first fault wins. Faults are not stored across a reboot;

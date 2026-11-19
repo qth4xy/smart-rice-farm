@@ -75,6 +75,18 @@
       ]
     },
     {
+      "name": "safety: run time carried over from before a reset counts toward PUMP_TIMEOUT",
+      "config": { "debounceS": 0, "pumpMaxRunS": 120 },
+      "steps": [
+        { "t": 0, "low": "DRY", "high": "DRY", "carryRunS": 100, "expect": { "pump": true, "events": ["pump_on"] } },
+        { "t": 19, "expect": { "pump": true } },
+        { "t": 20, "expect": { "pump": false, "fault": "PUMP_TIMEOUT", "events": ["pump_off", "fault"] } },
+        { "t": 30, "cmd": { "cmd": "clearFault" }, "expect": { "pump": true, "fault": null, "events": ["fault_cleared", "pump_on"] } },
+        { "t": 149, "expect": { "pump": true } },
+        { "t": 150, "expect": { "pump": false, "fault": "PUMP_TIMEOUT" } }
+      ]
+    },
+    {
       "name": "FLOOD: FLOAT_HIGH only, with minimum off time",
       "config": { "debounceS": 0, "pumpMinOffS": 60 },
       "mode": "FLOOD",
