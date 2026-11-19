@@ -1,0 +1,27 @@
+# PlatformIO
+.pio/
+firmware/include/secrets.h
+
+# Node / web
+node_modules/
+dist/
+.vercel/
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.pyc
+tools/*.csv
+
+# Mosquitto local password file
+tools/mosquitto/passwd
+
+# Editors / OS
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
