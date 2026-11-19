@@ -25,3 +25,6 @@ tools/mosquitto/passwd
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Logger output
+logs/

@@ -5,6 +5,7 @@
 #include <esp_mac.h>
 #include <esp_task_wdt.h>
 #include <esp_timer.h>
+#include <math.h>
 #include <string.h>
 #include <time.h>
 
@@ -53,6 +54,10 @@ void App::begin() {
 
   sensors_.begin();
   sensors_.setSoilCal(settings_.soilRawDry, settings_.soilRawWet);
+  pinMode(PIN_BOOT, INPUT_PULLUP);
+
+  net_.begin(deviceId_);  // runs on core 0; never blocks this loop
+  publishConfig();
 
   // Task watchdog: a hung loop resets the chip, and boot drives the pump OFF first.
   esp_task_wdt_config_t wdt = {};
@@ -86,7 +91,15 @@ void App::loop() {
     applySchedule();
   }
 
-  display_.update(ms, snapshot());
+  pollMqttCommands();
+  pollBootButton(ms);
+
+  if (ms - lastSnap_ >= OLED_REFRESH_MS || lastSnap_ == 0) {
+    lastSnap_ = ms ? ms : 1;
+    const Snapshot s = snapshot();
+    display_.update(ms, s);
+    publishState(s);
+  }
 
   if (rebootPending_ && static_cast<int32_t>(ms - rebootAt_) >= 0) {
     pump_.set(false);
@@ -166,10 +179,138 @@ void App::emit(const char* name, JsonObjectConst detail) {
   JsonDocument d;
   d["event"] = name;
   for (JsonPairConst kv : detail) d[kv.key()] = kv.value();
+  const time_t t = time(nullptr);
+  if (t >= kMinValidEpoch) d["ts"] = static_cast<int64_t>(t);
+  char buf[384];
+  const size_t n = serializeJson(d, buf, sizeof buf);
   Serial.print("[EVT] ");
-  serializeJson(d, Serial);
-  Serial.println();
-  if (sink_) sink_(name, d.as<JsonObjectConst>());
+  Serial.println(buf);
+  if (n < sizeof buf - 1) net_.postEvent(buf);
+}
+
+void App::publishConfig() {
+  JsonDocument d;
+  const AwdConfig& c = ctl_.config();
+  d["fw"] = FW_VERSION;
+  d["deviceId"] = deviceId_;
+  d["mode"] = modeName(ctl_.mode());
+  d["debounceS"] = c.debounceS;
+  d["pumpMaxRunS"] = c.pumpMaxRunS;
+  d["pumpMinOffS"] = c.pumpMinOffS;
+  d["soilDryAlertPct"] = c.soilDryAlertPct;
+  d["soilBackupDelayS"] = c.soilBackupDelayS;
+  d["soilBackupCanStartPump"] = c.soilBackupCanStartPump;
+  d["floodAfterTransplantDays"] = FLOOD_AFTER_TRANSPLANT_DAYS;
+  d["floweringWindowDays"] = FLOWERING_WINDOW_DAYS;
+  char date[11];
+  int y;
+  unsigned mo, da;
+  if (settings_.transplantDay != kNoDate && settings_.floweringDay != kNoDate) {
+    civilFromDays(settings_.transplantDay, y, mo, da);
+    snprintf(date, sizeof date, "%04d-%02u-%02u", y, mo, da);
+    d["transplantDate"] = date;
+    civilFromDays(settings_.floweringDay, y, mo, da);
+    snprintf(date, sizeof date, "%04d-%02u-%02u", y, mo, da);
+    d["floweringDate"] = date;
+  } else {
+    d["transplantDate"] = nullptr;
+    d["floweringDate"] = nullptr;
+  }
+  d["soilRawDry"] = settings_.soilRawDry;
+  d["soilRawWet"] = settings_.soilRawWet;
+  char buf[768];
+  serializeJson(d, buf, sizeof buf);
+  net_.setConfig(buf);
+}
+
+// Telemetry: immediately on any discrete state change, otherwise every TELEMETRY_MS.
+void App::publishState(const Snapshot& s) {
+  const uint32_t ms = millis();
+  const uint32_t key = static_cast<uint32_t>(s.mode) | static_cast<uint32_t>(s.pump) << 2 |
+                       static_cast<uint32_t>(s.zone) << 3 | static_cast<uint32_t>(s.fault) << 6 |
+                       s.warnings << 8 | static_cast<uint32_t>(s.manual) << 12 |
+                       static_cast<uint32_t>(s.low) << 13 | static_cast<uint32_t>(s.high) << 15 |
+                       static_cast<uint32_t>(s.muted) << 17 | static_cast<uint32_t>(s.stage) << 18 |
+                       static_cast<uint32_t>(s.net.mqttConnected) << 22;
+  if (key == lastStateKey_ && ms - lastTelemetry_ < TELEMETRY_MS) return;
+  lastStateKey_ = key;
+  lastTelemetry_ = ms ? ms : 1;
+
+  JsonDocument d;
+  if (s.epoch) d["ts"] = s.epoch;
+  else d["ts"] = nullptr;
+  d["mode"] = modeName(s.mode);
+  d["pump"] = s.pump;
+  d["pumpRunS"] = s.pumpRunS;
+  d["manual"] = s.manual;
+  d["filling"] = s.filling;
+  d["floatLow"] = floatName(s.low);
+  d["floatHigh"] = floatName(s.high);
+  d["zone"] = zoneName(s.zone);
+  if (s.fault == Fault::NONE) d["fault"] = nullptr;
+  else d["fault"] = faultName(s.fault);
+  JsonArray w = d["warnings"].to<JsonArray>();
+  if (s.warnings & Warn::FLOAT_LOW_SUSPECT) w.add("FLOAT_LOW_SUSPECT");
+  if (s.warnings & Warn::SLOW_FILL) w.add("SLOW_FILL");
+  if (s.warnings & Warn::FAST_DRAIN) w.add("FAST_DRAIN");
+  if (s.soilPct >= 0) d["soilPct"] = s.soilPct;
+  else d["soilPct"] = nullptr;
+  d["soilRaw"] = s.soilRaw;
+  if (s.dhtOk) {
+    d["airTempC"] = roundf(s.airTempC * 10) / 10;
+    d["airRh"] = roundf(s.airRh);
+  } else {
+    d["airTempC"] = nullptr;
+    d["airRh"] = nullptr;
+  }
+  if (s.nextIrrigationInS >= 0 && s.epoch) d["nextIrrigationEta"] = s.epoch + s.nextIrrigationInS;
+  else d["nextIrrigationEta"] = nullptr;
+  d["avgDryingS"] = s.avgDryingS;
+  d["avgFillS"] = s.avgFillS;
+  d["cycles"] = s.totalCycles;
+  d["stage"] = stageName(s.stage);
+  d["muted"] = s.muted;
+  if (s.net.wifiConnected) d["rssi"] = s.net.rssi;
+  else d["rssi"] = nullptr;
+  d["uptimeS"] = s.uptimeS;
+  d["fw"] = FW_VERSION;
+  char buf[1024];
+  serializeJson(d, buf, sizeof buf);
+  net_.setState(buf);
+}
+
+void App::pollMqttCommands() {
+  char buf[512];
+  for (int i = 0; i < 2 && net_.popCommand(buf, sizeof buf); i++) {
+    JsonDocument cmd, ack;
+    if (deserializeJson(cmd, buf) || !cmd.is<JsonObject>()) {
+      ack["cmd"] = nullptr;
+      ack["ok"] = false;
+      ack["error"] = "invalid JSON";
+      emit("ack", ack.as<JsonObjectConst>());
+      continue;
+    }
+    runCommand(cmd.as<JsonObjectConst>(), ack);
+  }
+}
+
+// Hold BOOT for 5 s while running -> Wi-Fi setup portal.
+void App::pollBootButton(uint32_t ms) {
+  const bool down = digitalRead(PIN_BOOT) == LOW;
+  if (!down) {
+    bootDown_ = false;
+    bootFired_ = false;
+    return;
+  }
+  if (!bootDown_) {
+    bootDown_ = true;
+    bootSince_ = ms;
+  } else if (!bootFired_ && ms - bootSince_ >= 5000) {
+    bootFired_ = true;
+    buzzer_.beeps(1);
+    net_.requestPortal();
+    emitSimple("portal", "reason", "button");
+  }
 }
 
 void App::emitSimple(const char* name, const char* key, const char* value) {
@@ -182,6 +323,7 @@ void App::persist() {
   settings_.awd = ctl_.config();
   settings_.mode = ctl_.mode();
   storage_.save(settings_);
+  publishConfig();
 }
 
 bool App::applyMode(Mode m, const char* reason) {
@@ -208,7 +350,7 @@ void App::applySchedule() {
   if (r.hasMode) applyMode(r.mode, "schedule");
 }
 
-Snapshot App::snapshot() const {
+Snapshot App::snapshot() {
   Snapshot s;
   const uint64_t now = nowMs();
   s.uptimeS = static_cast<uint32_t>(now / 1000);
@@ -242,7 +384,7 @@ Snapshot App::snapshot() const {
   s.nextIrrigationInS = eta == 0 ? -1 : (eta > now ? static_cast<int64_t>((eta - now) / 1000) : 0);
   s.stage = lastStage_;
   s.muted = buzzer_.muted(millis());
-  s.net = net_;
+  s.net = net_.status();
   strncpy(s.deviceId, deviceId_, sizeof s.deviceId - 1);
   return s;
 }
@@ -375,7 +517,8 @@ void App::runCommand(JsonObjectConst cmd, JsonDocument& ack) {
     else if (!cmd["on"].is<bool>()) err = "'on' must be true or false";
     else display_.setTestPage(cmd["on"].as<bool>());
   } else if (!strcmp(name, "wifiPortal")) {
-    err = "Wi-Fi portal arrives in Phase 4";
+    if (!onlyKeys(cmd, {"cmd"}, bad)) err = badField(bad);
+    else net_.requestPortal();
   } else if (!strcmp(name, "reboot")) {
     if (!onlyKeys(cmd, {"cmd"}, bad)) err = badField(bad);
     else {
