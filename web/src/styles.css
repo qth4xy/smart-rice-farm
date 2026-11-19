@@ -1,5 +1,6 @@
 /* Smart Rice Farm dashboard. Projector-first: high contrast, big type, one screen without scrolling
-   at 1920x1080 and 1280x720 (rem scales with the viewport), still usable at 1024x768. */
+   at 1920x1080 and 1280x720 (rem scales with the viewport), still usable at 1024x768.
+   Tablets and phones get a scrolling layout (see the media queries at the end). */
 
 :root {
   /* 1rem = 20px at 1920x1080, 13.3px at 1280x720 */
@@ -94,6 +95,7 @@ p {
 /* ---------------- layout ---------------- */
 .app {
   height: 100vh;
+  height: 100dvh; /* mobile browsers: excludes the address bar */
   display: grid;
   grid-template-rows: auto auto minmax(0, 1fr) auto auto;
   gap: var(--gap);
@@ -993,6 +995,12 @@ dialog.settings h2 {
     min-height: 100vh;
     overflow: visible;
   }
+  .top {
+    flex-wrap: wrap;
+  }
+  .top-right {
+    flex-wrap: wrap;
+  }
   .grid {
     grid-template-columns: 1fr 1fr;
     grid-template-rows: 26rem 20rem auto;
@@ -1153,5 +1161,207 @@ dialog.confirm p {
   .xsec .pour,
   .tile.health.fault {
     animation: none;
+  }
+}
+
+/* ---------------- touch screens: finger-sized targets ---------------- */
+@media (hover: none) and (pointer: coarse) {
+  .btn,
+  select,
+  .seg-switch button {
+    min-height: 44px;
+  }
+  .icon-btn {
+    width: 44px;
+    height: 44px;
+  }
+  .btn.icon {
+    min-width: 44px;
+    justify-content: center;
+  }
+}
+
+/* ---------------- phones (portrait, up to ~760px wide): one column, natural scrolling ---------------- */
+@media (max-width: 760px) {
+  :root,
+  :root.present {
+    font-size: 15px;
+  }
+  .app {
+    height: auto;
+    min-height: 100dvh;
+    overflow: visible;
+    padding: 12px 12px calc(12px + env(safe-area-inset-bottom));
+    gap: 10px;
+  }
+
+  /* header: brand on one line, controls on the next */
+  .top {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .brand h1 {
+    font-size: 1.35rem;
+  }
+  .tagline,
+  .badge,
+  .top-right .icon-btn[aria-label='Presentation mode'],
+  .top-right .icon-btn[aria-label='Fullscreen'] {
+    display: none;
+  }
+  .top-right {
+    width: 100%;
+    flex: 1 1 100%;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .clock {
+    font-size: 0.9rem;
+    order: 3;
+    width: 100%;
+  }
+
+  /* status tiles: two columns, the water tile full width */
+  .strip {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .strip .tile.zone {
+    grid-column: 1 / -1; /* the water zone + both floats need the full width */
+  }
+  .tile-s.floats {
+    flex-wrap: wrap;
+    gap: 0 0.8rem;
+  }
+  .tile {
+    padding: 0.4rem 0.7rem;
+  }
+  .tile-k {
+    font-size: 0.72rem;
+  }
+  .tile-v,
+  .tile.zone .tile-v {
+    font-size: 1.55rem;
+  }
+  .tile-s {
+    font-size: 0.8rem;
+  }
+
+  /* panels stacked */
+  .grid {
+    grid-template-columns: 1fr;
+    grid-template-rows: none;
+    grid-template-areas: 'hero' 'chart' 'logic' 'side';
+    gap: 10px;
+  }
+  .hero .xsec {
+    flex: none;
+    height: auto;
+  }
+  .chart {
+    height: 15rem;
+  }
+  .legend {
+    margin-left: 0;
+  }
+  .logic {
+    overflow: visible;
+  }
+  .logic table {
+    font-size: 0.85rem;
+  }
+  .logic th,
+  .logic td {
+    padding-left: 0.3rem;
+    padding-right: 0.3rem;
+  }
+  .chip {
+    min-width: 0;
+    font-size: 0.75rem;
+    padding: 0.05rem 0.25rem;
+  }
+  .logic-note {
+    display: block;
+    margin-top: 0.4rem;
+  }
+  .side {
+    grid-template-columns: 1fr;
+    grid-template-rows: none;
+    gap: 10px;
+  }
+  .sensors {
+    gap: 8px;
+  }
+  .sensor-v {
+    font-size: 1.6rem;
+  }
+  .stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    row-gap: 0.5rem;
+  }
+  .log {
+    max-height: 18rem;
+  }
+  .log ol {
+    overflow-y: auto;
+  }
+  .ev {
+    grid-template-columns: 1.2rem 6.6rem 1fr;
+    font-size: 0.8rem;
+  }
+
+  /* caption and controls */
+  .caption {
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+  .cap-title {
+    white-space: normal;
+  }
+  .cap-text {
+    font-size: 0.95rem;
+  }
+  .controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .group {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .g-label {
+    width: 100%;
+  }
+  .group select {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+  .group .btn:not(.icon) {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+  .present .controls {
+    display: flex; /* a phone has no keyboard: keep the controls */
+  }
+  .toast {
+    bottom: calc(1rem + env(safe-area-inset-bottom));
+    width: calc(100% - 24px);
+    justify-content: center;
+  }
+
+  /* dialogs */
+  dialog.settings {
+    width: calc(100vw - 24px);
+    max-width: none;
+    padding: 1rem;
+  }
+  .field {
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+  .field input.wide {
+    width: 100%;
   }
 }

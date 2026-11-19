@@ -1,5 +1,5 @@
 // Opens the single-file build straight from disk (file://, no server, network blocked) and takes
-// screenshots at the three projector sizes. Fails on page errors, network requests, or on
+// screenshots at the projector sizes, two phones and a tablet. Fails on page errors, network requests, or on
 // scrolling at 1920x1080 / 1280x720.
 import { chromium } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
@@ -14,6 +14,10 @@ const sizes = [
   { w: 1920, h: 1080, noScroll: true },
   { w: 1280, h: 720, noScroll: true },
   { w: 1024, h: 768, noScroll: false },
+  // phones and a tablet: vertical scrolling is fine, horizontal never
+  { w: 390, h: 844, noScroll: false, mobile: true },
+  { w: 360, h: 740, noScroll: false, mobile: true },
+  { w: 768, h: 1024, noScroll: false, mobile: true },
 ];
 const shots = [
   { name: 'normal', keys: [], wait: 2500 },
@@ -25,7 +29,10 @@ const browser = await chromium.launch();
 let failed = false;
 for (const s of sizes) {
   for (const shot of shots) {
-    const ctx = await browser.newContext({ viewport: { width: s.w, height: s.h } });
+    const ctx = await browser.newContext({
+      viewport: { width: s.w, height: s.h },
+      ...(s.mobile ? { isMobile: true, hasTouch: true, deviceScaleFactor: 2 } : {}),
+    });
     await ctx.route(/^https?:/, (r) => {
       console.error(`  NETWORK REQUEST blocked: ${r.request().url()}`);
       failed = true;
@@ -48,11 +55,11 @@ for (const s of sizes) {
       iw: innerWidth,
     }));
     const vScroll = dims.sh > dims.ih + 1;
-    const hScroll = dims.sw > dims.iw + 1;
+    const hScroll = dims.sw > s.w + 1 || dims.iw > s.w + 1; // a mobile browser widens innerWidth to fit overflow
     const bad = hScroll || (s.noScroll && vScroll);
     if (bad) failed = true;
     const path = `${out}/${s.w}x${s.h}-${shot.name}.png`;
-    await page.screenshot({ path });
+    await page.screenshot({ path, fullPage: !!s.mobile });
     console.log(`${bad ? 'FAIL' : 'ok  '} ${s.w}x${s.h} ${shot.name}: scroll ${dims.sw}x${dims.sh} in ${dims.iw}x${dims.ih} -> ${path}`);
     await ctx.close();
   }
