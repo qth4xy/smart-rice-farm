@@ -10,6 +10,11 @@ Full spec: `docs/PROMPT.md`. Decisions below override the spec where they differ
 - Pump: a pump module with pins IN / DC+ / DC- (no relay contacts). DC+/DC- go to a separate 5 V
   supply; IN goes to GPIO7. Common GND with the ESP32. Trigger polarity: config flag, check on the bench.
 - Buzzer: active buzzer module with pins GND / I/O / VCC. Polarity: config flag (often active-LOW).
+- Bench 2026-11-19 (bring-up fw): OLED 0x3C OK, DHT11 OK, soil raw ~2580 in air, BOOT OK,
+  pump IN active-HIGH confirmed (ran 3 s), buzzer module active-HIGH confirmed.
+  Floats not yet tested by hand (both read OPEN at rest).
+- Toolchain: PlatformIO's downloader stalls on this network. Fetch packages with curl and
+  `pio pkg install -g -t <file>`, then fix `.piopm` spec to the registry owner/name/id.
 - Broker: HiveMQ Cloud (TLS 8883 for the device, wss 8884 for the web). Local Mosquitto is a backup.
 - Hosting: GitHub repo `smart-rice-farm` (public) → Vercel (replaces GitHub Pages in the spec).
 
