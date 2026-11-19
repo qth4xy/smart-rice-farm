@@ -79,6 +79,10 @@ export function useSimulation() {
       simRef.current?.manualPump(on, seconds);
       refresh();
     },
+    fill: () => {
+      simRef.current?.fill();
+      refresh();
+    },
     clearFault: () => {
       simRef.current?.clearFault();
       refresh();

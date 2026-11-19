@@ -193,7 +193,8 @@ export class Simulation {
   private onEvent(e: EventName): void {
     if (this.faults.linkDown) this.queuedWhileDown++;
     const map: Record<EventName, [LogKind, () => string] | null> = {
-      pump_on: ['pump', () => (this.ctl.manualActive ? 'Pump ON (manual)' : 'Pump ON: water reached −15 cm, filling')],
+      pump_on: ['pump', () =>
+        this.ctl.manualActive ? 'Pump ON (manual)' : this.ctl.floatLow === 'WET' ? 'Pump ON: filling to +5 cm' : 'Pump ON: water reached −15 cm, filling'],
       pump_off: ['pump', () => (this.ctl.fault ? 'Pump OFF (safety stop)' : 'Pump OFF: field back at +5 cm')],
       fault: ['fault', () => `FAULT ${this.ctl.fault}: pump stopped and locked`],
       fault_cleared: null,

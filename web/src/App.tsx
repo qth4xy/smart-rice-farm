@@ -156,6 +156,16 @@ export function App() {
       run: () => live.send(on ? { cmd: 'pump', on: true, seconds: 30 } : { cmd: 'pump', on: false }),
     });
   };
+  const doFill = () => {
+    if (!isLive) return sim.fill();
+    setConfirm({
+      title: 'Fill the real field to +5 cm?',
+      body: 'The pump runs until FLOAT_HIGH reads WET. The device safety limit (pumpMaxRunS) still stops it if the water never gets there.',
+      action: 'Start fill',
+      danger: true,
+      run: () => live.send({ cmd: 'fill' }),
+    });
+  };
   const doClear = () => {
     if (!isLive) return sim.clearFault();
     setConfirm({
@@ -287,6 +297,20 @@ export function App() {
           ) : (
             <button className="btn" onClick={() => doPump(true)} disabled={!v || !!v.fault}>
               {isLive ? 'Run 30 s' : 'Run 2 min'}
+            </button>
+          )}
+          {v?.pump && v.filling && !v.manual ? (
+            <button className="btn" onClick={() => doPump(false)} title="Stop the fill now">
+              Stop fill
+            </button>
+          ) : (
+            <button
+              className="btn"
+              onClick={doFill}
+              disabled={!v || !!v.fault || v.mode === 'OFF' || v.floatHigh !== 'DRY'}
+              title={v?.mode === 'OFF' ? 'Choose AWD or FLOOD first' : v?.floatHigh === 'WET' ? 'Already at +5 cm' : 'Pump until FLOAT_HIGH reads WET (+5 cm)'}
+            >
+              <Icon name="pump" /> Fill to +5 cm
             </button>
           )}
           <button className="btn danger" onClick={doClear} disabled={!v?.fault}>
